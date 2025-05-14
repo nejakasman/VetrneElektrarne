@@ -1,0 +1,36 @@
+# Node.js
+node_modules/
+
+# Okoljske datoteke
+.env
+
+# Atom
+*~
+*.atom
+.atom/
+
+### Mac OS ###
+.DS_Store
+
+
+#Electron
+dist/
+build/
+*.asar
+
+# SQLite DB datoteke
+database/*.db
+
+
+# Logi / začasne datoteke
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE/editorji
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
