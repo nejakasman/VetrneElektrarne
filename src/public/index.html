@@ -1,9 +1,23 @@
 <!DOCTYPE html>
-<html>
+<html lang="sl">
 <head>
-  <title>Vetrne Elektrarne</title>
+<meta charset="UTF-8" />
+<title>Kalkulator vetrne elektrarne</title>
 </head>
 <body>
-  <h1>Pozdravljeni v aplikaciji Vetrne Elektrarne!</h1>
+  <h1>Kalkulator vetrne elektrarne</h1>
+
+  <label for="latitude">Latitude:</label>
+  <input type="number" id="latitude" step="0.0001"/><br />
+
+  <label for="longitude">Longitude:</label>
+  <input type="number" id="longitude" step="0.0001" /><br />
+
+  <button id="windData">Pridobi podatke za leto 2024</button>
+
+  <h2>Rezultati:</h2>
+  <pre id="results"></pre>
+
+  <script src="pridobi-veter.js"></script>
 </body>
 </html>
