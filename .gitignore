@@ -19,7 +19,7 @@ build/
 *.asar
 
 # SQLite DB datoteke
-database/*.db
+database/turbines.json
 
 
 # Logi / začasne datoteke
