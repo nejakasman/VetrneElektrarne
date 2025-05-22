@@ -1,3 +1,4 @@
+@@ -0,0 +1,37 @@
 // renderer.js
 const { findOrFetchWeatherData } = require('./vnosVBazo');
 
