@@ -1,4 +1,9 @@
 const { app, BrowserWindow } = require('electron');
+const { initDatabase } = require('../database/db');
+
+app.whenReady().then(() => {
+  initDatabase();
+});
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -10,6 +15,7 @@ function createWindow() {
     }
   });
   win.loadFile('src/public/index.html');
+  win.webContents.openDevTools();
 }
 
 app.whenReady().then(createWindow);

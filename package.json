@@ -20,9 +20,11 @@
   },
   "homepage": "https://github.com/nejakasman/VetrneElektrarne#readme",
   "devDependencies": {
-    "electron": "^36.2.0"
+    "electron": "^36.2.0",
+    "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
+    "geolib": "^3.3.4",
     "node-fetch": "^2.7.0",
     "sqlite3": "^5.1.7"
   }

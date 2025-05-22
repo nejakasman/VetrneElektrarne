@@ -10,6 +10,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+
 function initDatabase() {
   db.serialize(() => {
     db.run("PRAGMA foreign_keys = ON");
@@ -17,8 +18,8 @@ function initDatabase() {
     db.run(`
       CREATE TABLE IF NOT EXISTS Lokacija (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        lon TEXT NOT NULL,
-        lat TEXT NOT NULL
+        longitude TEXT NOT NULL,
+        latitude TEXT NOT NULL
       )
     `);
 
@@ -27,9 +28,8 @@ function initDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         datum TEXT NOT NULL,
         lokacija_id INTEGER NOT NULL,
-        veter_dan DECIMAL(5,2),
-        veter_maks DECIMAL(5,2),
-        veter_min DECIMAL(5,2),
+        wind_speed_10m DECIMAL(5,2),
+        wind_speed_100m DECIMAL(5,2),
         FOREIGN KEY (lokacija_id) REFERENCES Lokacija(id) ON DELETE CASCADE
       )
     `);
@@ -54,3 +54,4 @@ function initDatabase() {
 }
 
 module.exports = { db, initDatabase };
+initDatabase();
