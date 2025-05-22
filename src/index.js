@@ -5,6 +5,8 @@ app.whenReady().then(() => {
   initDatabase();
 });
 
+require('../backend/api');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 800,
@@ -17,6 +19,7 @@ function createWindow() {
   win.loadFile('src/public/index.html');
   win.webContents.openDevTools();
 }
+
 
 app.whenReady().then(createWindow);
 

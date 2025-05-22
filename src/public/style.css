@@ -1,0 +1,32 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+#map {
+  position: absolute;
+  top: 56px; /* višina navbarja */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+.navbar {
+  z-index: 1050;
+}
+
+#sidebar {
+  z-index: 1040;
+}
+
+.nav-link {
+  font-weight: bold;
+}
+
+
+form {
+    font-size: 0.9rem;
+}
