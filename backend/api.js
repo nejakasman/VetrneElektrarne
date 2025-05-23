@@ -1,35 +1,124 @@
+const { db } = require('../database/db');
+
 const { ipcMain } = require('electron');
 
-// Seznam turbin (in-memory)
-let turbines = [];
+const { findOrFetchWeatherData } = require('../src/public/vnosVBazo');
 
-// CREATE – Dodaj novo turbino
+
+
+//CREATE
 ipcMain.handle('turbine-create', (event, turbine) => {
-  turbines.push(turbine);
-  return { status: 'success', message: 'Turbina dodana.' };
+  return new Promise((resolve, reject) => {
+    db.run(
+      `INSERT INTO Turbine (name) VALUES (?)`,
+      [turbine.name],
+      function(err) {
+        if (err) {
+          return reject({ status: 'error', message: err.message });
+        }
+
+        // Vstavljanje hitrosti
+        const turbineId = this.lastID;
+        const insertSpeeds = turbine.speeds.map((speed, i) => {
+          return new Promise((resolveSpeed, rejectSpeed) => {
+            db.run(
+              `INSERT INTO Turbine_Hitrosti (turbine_id, speed, power) VALUES (?, ?, ?)`,
+              [turbineId, parseFloat(speed), parseInt(turbine.powers[i])],
+              err => {
+                if (err) return rejectSpeed(err);
+                resolveSpeed();
+              }
+            );
+          });
+        });
+
+        Promise.all(insertSpeeds)
+          .then(() => resolve({ status: 'success', message: 'Turbina dodana.' }))
+          .catch(err => reject({ status: 'error', message: err.message }));
+      }
+    );
+  });
 });
 
-// READ – Vrni vse turbine
+//READ
 ipcMain.handle('turbine-read-all', () => {
-  return turbines;
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT t.name, h.speed, h.power
+      FROM Turbine t
+      LEFT JOIN Turbine_Hitrosti h ON t.id = h.turbine_id
+    `, [], (err, rows) => {
+      if (err) return reject({ status: 'error', message: err.message });
+
+      const grouped = {};
+      rows.forEach(row => {
+        if (!grouped[row.name]) {
+          grouped[row.name] = { name: row.name, speeds: [], powers: [] };
+        }
+        grouped[row.name].speeds.push(row.speed);
+        grouped[row.name].powers.push(row.power);
+      });
+
+      resolve(Object.values(grouped));
+    });
+  });
 });
 
-// UPDATE – Posodobi obstoječo turbino po imenu
+//UPDATE
 ipcMain.handle('turbine-update', (event, updatedTurbine) => {
-  const index = turbines.findIndex(t => t.name === updatedTurbine.name);
-  if (index !== -1) {
-    turbines[index] = updatedTurbine;
-    return { status: 'success', message: 'Turbina posodobljena.' };
-  }
-  return { status: 'error', message: 'Turbina ni najdena.' };
+  return new Promise((resolve, reject) => {
+    db.get(`SELECT id FROM Turbine WHERE name = ?`, [updatedTurbine.name], (err, row) => {
+      if (err || !row) {
+        return reject({ status: 'error', message: 'Turbina ni najdena.' });
+      }
+
+      const turbineId = row.id;
+
+      db.run(`DELETE FROM Turbine_Hitrosti WHERE turbine_id = ?`, [turbineId], err => {
+        if (err) return reject({ status: 'error', message: err.message });
+
+        const insertSpeeds = updatedTurbine.speeds.map((speed, i) => {
+          return new Promise((resolveSpeed, rejectSpeed) => {
+            db.run(
+              `INSERT INTO Turbine_Hitrosti (turbine_id, speed, power) VALUES (?, ?, ?)`,
+              [turbineId, parseFloat(speed), parseInt(updatedTurbine.powers[i])],
+              err => {
+                if (err) return rejectSpeed(err);
+                resolveSpeed();
+              }
+            );
+          });
+        });
+
+        Promise.all(insertSpeeds)
+          .then(() => resolve({ status: 'success', message: 'Turbina posodobljena.' }))
+          .catch(err => reject({ status: 'error', message: err.message }));
+      });
+    });
+  });
 });
 
-// DELETE – Izbriši turbino po imenu
+//DELETE
 ipcMain.handle('turbine-delete', (event, name) => {
-  const initialLength = turbines.length;
-  turbines = turbines.filter(t => t.name !== name);
-  if (turbines.length < initialLength) {
-    return { status: 'success', message: 'Turbina izbrisana.' };
+  return new Promise((resolve, reject) => {
+    db.run(`DELETE FROM Turbine WHERE name = ?`, [name], function(err) {
+      if (err) {
+        return reject({ status: 'error', message: err.message });
+      }
+      if (this.changes === 0) {
+        return resolve({ status: 'error', message: 'Turbina ni najdena.' });
+      }
+      resolve({ status: 'success', message: 'Turbina izbrisana.' });
+    });
+  });
+});
+
+ipcMain.handle('weather-fetch', async (event, { latitude, longitude }) => {
+  try {
+    const data = await findOrFetchWeatherData(latitude, longitude);
+    return { status: 'success', data };
+  } catch (err) {
+    console.error('Napaka v weather-fetch:', err);
+    return { status: 'error', message: err.message };
   }
-  return { status: 'error', message: 'Turbina ni najdena.' };
 });

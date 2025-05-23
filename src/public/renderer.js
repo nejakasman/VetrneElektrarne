@@ -1,3 +1,4 @@
+//testiranje crud za turbine (brez baze)
 const { ipcRenderer } = require('electron');
 
 const testTurbina = {
@@ -6,15 +7,14 @@ const testTurbina = {
   powers: ['46', '164', '325']
 };
 
-// DODAJ
+// dodajanje
 ipcRenderer.invoke('turbine-create', testTurbina).then(response => {
   console.log('Dodano:', response);
 
-  // PREBERI VSE
   ipcRenderer.invoke('turbine-read-all').then(turbines => {
     console.log('Turbine:', turbines);
 
-    // POSODOBI (spremenimo power)
+    // posodabljanje
     const novaTurbina = {
       ...testTurbina,
       powers: ['999', '888', '777']
@@ -23,7 +23,7 @@ ipcRenderer.invoke('turbine-create', testTurbina).then(response => {
     ipcRenderer.invoke('turbine-update', novaTurbina).then(updateRes => {
       console.log('Posodobljeno:', updateRes);
 
-      // IZBRIŠI
+      // brisanje
       ipcRenderer.invoke('turbine-delete', testTurbina.name).then(delRes => {
         console.log('Izbrisano:', delRes);
       });
