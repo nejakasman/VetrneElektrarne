@@ -1,4 +1,3 @@
-// pridobi-veter.js
 async function fetchWeatherData(latitude, longitude) {
   const params = {
     latitude,

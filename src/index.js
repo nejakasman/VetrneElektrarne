@@ -5,7 +5,7 @@ app.whenReady().then(() => {
   initDatabase();
 });
 
-require('../backend/api');
+require('../backend/turbine');
 
 function createWindow() {
   const win = new BrowserWindow({

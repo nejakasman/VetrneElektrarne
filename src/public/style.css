@@ -30,3 +30,17 @@ body, html {
 form {
     font-size: 0.9rem;
 }
+
+
+.card {
+  max-height: 400px; 
+  overflow-y: auto;
+}
+
+.card-title {
+  color: #0056b3;
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+}

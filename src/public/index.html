@@ -15,15 +15,6 @@
   <div class="container-fluid">
     <ul class="nav">
       <li class="nav-item">
-        <a class="nav-link text-dark" href="#">Domov</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link text-dark" href="#">Statistika</a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link text-dark" href="#">Kontakt</a>
-      </li>
-      <li class="nav-item">
         <button id="toggleForm" class="btn btn-outline-primary ms-3">Dodaj lokacijo</button>
       </li>
       <li class="nav-item">
@@ -50,7 +41,16 @@
       <label for="longitude" class="form-label">Dolžina:</label>
       <input type="text" id="longitude" name="longitude" class="form-control" placeholder="14.5058">
     </div>
-    <button type="submit" class="btn btn-primary w-100">Dodaj na zemljevid</button>
+    <div class="mb-3">
+      <label for="turbine-type" class="form-label">Vrsta turbine:</label>
+      <select id="turbine-type" name="turbine-type" class="form-select">
+      </select>
+    </div>
+    <button id="calculate-energy" class="btn btn-success w-100">Izračunaj energijsko vrednost</button>
+    <div id="results-container" class="mt-4">
+      <h5>Rezultati</h5>
+      <pre id="results" class="border p-3"></pre>
+    </div>
   </form>
 </div>
 

@@ -50,6 +50,19 @@ function initDatabase() {
         FOREIGN KEY (turbine_id) REFERENCES Turbine(id) ON DELETE CASCADE
       )
     `);
+
+    // db.run(`
+    //   CREATE TABLE EnergijskaVrednost (
+    //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    //     lokacija_id INTEGER,
+    //     turbine_id INTEGER,
+    //     datum DATETIME,
+    //     speed FLOAT,
+    //     energy FLOAT,
+    //     FOREIGN KEY (lokacija_id) REFERENCES Lokacija(id) ON DELETE CASCADE,
+    //     FOREIGN KEY (turbine_id) REFERENCES Turbine(id) ON DELETE CASCADE
+    //   )
+    // `);
   });
 }
 

@@ -4,25 +4,110 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function naloziTurbine() {
     ipcRenderer.invoke('turbine-read-all').then(turbines => {
-      const seznam = document.getElementById('seznamTurbin');
-      seznam.innerHTML = '';
+      const tabelaContainer = document.getElementById('tabelaContainer');
+      tabelaContainer.innerHTML = '';
 
-      turbines.forEach(t => {
-        const item = document.createElement('li');
-        item.classList.add('list-group-item');
-        item.innerHTML = `
-          <strong>${t.name}</strong><br>
-          Hitrosti: ${t.speeds.join(', ')}<br>
-          Moči: ${t.powers.join(', ')}<br>
-          <button class="btn btn-danger btn-sm mt-2 me-2" onclick="izbrisi('${t.name}')">Izbriši</button>
-          <button class="btn btn-secondary btn-sm mt-2" onclick="uredi('${t.name}')">Uredi</button>
+      const accordion = document.createElement('div');
+      accordion.classList.add('accordion');
+      accordion.id = 'turbineAccordion';
+
+      turbines.forEach((t, index) => {
+        const accordionItem = document.createElement('div');
+        accordionItem.classList.add('accordion-item');
+
+        const headerId = `heading${index}`;
+        const collapseId = `collapse${index}`;
+
+        const accordionHeader = document.createElement('h2');
+        accordionHeader.classList.add('accordion-header');
+        accordionHeader.id = headerId;
+
+        const button = document.createElement('button');
+        button.classList.add('accordion-button');
+        if(index !== 0) button.classList.add('collapsed');
+        button.type = 'button';
+        button.setAttribute('data-bs-toggle', 'collapse');
+        button.setAttribute('data-bs-target', `#${collapseId}`);
+        button.setAttribute('aria-expanded', index === 0 ? 'true' : 'false');
+        button.setAttribute('aria-controls', collapseId);
+        button.textContent = t.name;
+
+        accordionHeader.appendChild(button);
+        accordionItem.appendChild(accordionHeader);
+
+        const accordionCollapse = document.createElement('div');
+        accordionCollapse.id = collapseId;
+        accordionCollapse.classList.add('accordion-collapse', 'collapse');
+        if(index === 0) accordionCollapse.classList.add('show');
+        accordionCollapse.setAttribute('aria-labelledby', headerId);
+        accordionCollapse.setAttribute('data-bs-parent', '#turbineAccordion');
+
+        const accordionBody = document.createElement('div');
+        accordionBody.classList.add('accordion-body');
+
+        const actionButtons = document.createElement('div');
+        actionButtons.classList.add('mb-3');
+        actionButtons.innerHTML = `
+          <button class="btn btn-warning me-2" onclick="uredi('${t.name}')">Uredi</button>
+          <button class="btn btn-danger" onclick="izbrisi('${t.name}')">Izbriši</button>
         `;
-        seznam.appendChild(item);
+        accordionBody.appendChild(actionButtons);
+
+        const table = document.createElement('table');
+        table.classList.add('table', 'table-striped', 'mb-3');
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Hitrost vetra (m/s)</th>
+              <th>Energijska vrednost (kW)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t.speeds.map((speed, i) => `
+              <tr>
+                <td>${speed}</td>
+                <td>${t.powers[i]}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+
+        const canvas = document.createElement('canvas');
+        new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels: t.speeds,
+            datasets: [{
+              label: `Energijska vrednost (${t.name})`,
+              data: t.powers,
+              borderColor: 'rgba(75, 192, 192, 1)',
+              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              fill: true,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'top' },
+            },
+            scales: {
+              x: { title: { display: true, text: 'Hitrost vetra (m/s)' }},
+              y: { title: { display: true, text: 'Energijska vrednost (kW)' }},
+            }
+          }
+        });
+
+        accordionBody.appendChild(table);
+        accordionBody.appendChild(canvas);
+        accordionCollapse.appendChild(accordionBody);
+        accordionItem.appendChild(accordionCollapse);
+        accordion.appendChild(accordionItem);
       });
+
+      tabelaContainer.appendChild(accordion);
     });
   }
 
-  // dodajanje trubin
   const originalSubmit = function (e) {
     e.preventDefault();
 
@@ -42,7 +127,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   form.onsubmit = originalSubmit;
 
-  // brisanje
   window.izbrisi = (name) => {
     if (!confirm(`Izbrisati ${name}?`)) return;
 
@@ -51,7 +135,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  // urejanje
   window.uredi = (name) => {
     ipcRenderer.invoke('turbine-read-all').then(turbines => {
       const turbina = turbines.find(t => t.name === name);
@@ -60,8 +143,10 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('name').value = turbina.name;
       document.getElementById('speeds').value = turbina.speeds.join(',');
       document.getElementById('powers').value = turbina.powers.join(',');
+      const tabTrigger = new bootstrap.Tab(document.querySelector('#add-tab'));
+      tabTrigger.show();
 
-      // vstavljanje podatkov v obrazec za urejanje
+
       form.onsubmit = function (e) {
         e.preventDefault();
 
