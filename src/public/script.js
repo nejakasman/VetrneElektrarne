@@ -85,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const lat = parseFloat(document.getElementById("latitude").value);
     const lon = parseFloat(document.getElementById("longitude").value);
-
     const selectedTurbineName = turbineDropdown.value;
 
     if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
@@ -98,34 +97,58 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    resultsElem.textContent = "Nalaganje podatkov...";
-
     try {
-      const windResult = await ipcRenderer.invoke('weather-fetch', { latitude: lat, longitude: lon });
+      const windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon });
 
-      const turbineData = await ipcRenderer.invoke('turbine-get-speeds', { turbineName: selectedTurbineName });
+      if (windResult.status === "success" && windResult.data.length > 0) {
+        const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
+          windData: windResult.data,
+          turbineName: selectedTurbineName,
+        });
 
-      if (windResult.status === 'success' && windResult.data.length > 0 && turbineData && turbineData.length > 0) {
-        const windText = windResult.data
-          .map(m =>
-            `Čas: ${m.datetime}, Hitrost vetra na 10m: ${m.wind_speed_10m} km/h, Hitrost vetra na 100m: ${m.wind_speed_100m} km/h`
-          )
-          .join("\n");
+        if (energyResult.status === "success") {
+          document.getElementById("result-turbine-name").textContent = selectedTurbineName;
+          document.getElementById("result-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
 
-        const turbineText = turbineData
-          .map(td => `Hitrost: ${td.speed} m/s, Moč: ${td.power} W`)
-          .join("\n");
+          const resultSidebar = document.getElementById("result-sidebar");
+          resultSidebar.style.transform = "translateX(0)";
 
-        resultsElem.textContent = `Izbrana turbina: ${selectedTurbineName}\n\nPodatki o turbini:\n${turbineText}\n\nVetrovni podatki:\n${windText}`;
-      } else if (windResult.status !== 'success' || windResult.data.length === 0) {
-        resultsElem.textContent = "Ni vetrovnih podatkov za to lokacijo.";
+          //graf
+          const ctx = document.getElementById('energy-chart').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: Array.from({ length: 52 }, (_, i) => `Teden ${i + 1}`),
+              datasets: [{
+                label: 'Tedenska proizvodnja (kWh)',
+                data: energyResult.weeklyEnergy,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderWidth: 2,
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { position: 'top' },
+              },
+              scales: {
+                x: { title: { display: true, text: 'Tedni' } },
+                y: { title: { display: true, text: 'Energija (kWh)' } },
+              }
+            }
+          });
+        } else {
+          resultsElem.textContent = `Napaka pri izračunu energije: ${energyResult.message}`;
+        }
       } else {
-        resultsElem.textContent = "Ni podatkov o izbrani turbini.";
+        resultsElem.textContent = "Ni vetrovnih podatkov za to lokacijo.";
       }
-
     } catch (error) {
-      console.error('Napaka:', error);
+      console.error("Napaka:", error);
       resultsElem.textContent = `Napaka: ${error.message}`;
     }
   });
+
+
 });

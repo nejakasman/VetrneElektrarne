@@ -33,7 +33,7 @@ form {
 
 
 .card {
-  max-height: 400px; 
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -43,4 +43,9 @@ form {
 
 .table thead th {
   background-color: #f8f9fa;
+}
+
+#result-sidebar {
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
 }

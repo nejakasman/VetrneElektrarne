@@ -3,6 +3,8 @@ const { db } = require('../database/db');
 const { ipcMain } = require('electron');
 
 const { findOrFetchWeatherData } = require('../src/public/vnosVBazo');
+const { getTurbineSpeeds } = require('./getTurbineSpeeds');
+const { calculateAnnualEnergy } = require('./calculateAnnualEnergy');
 
 
 
@@ -138,4 +140,19 @@ ipcMain.handle('turbine-get-speeds', (event, { turbineName }) => {
       });
     });
   });
+});
+
+ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName }) => {
+  try {
+    const turbineData = await getTurbineSpeeds(turbineName);
+
+    if (!turbineData || turbineData.length === 0) throw new Error("Ni podatkov o turbini.");
+
+    const { totalEnergy, weeklyEnergy } = calculateAnnualEnergy(windData, turbineData);
+
+    return { status: 'success', totalEnergy, weeklyEnergy };
+  } catch (error) {
+    console.error("Napaka pri izračunu letne energije:", error);
+    return { status: 'error', message: error.message };
+  }
 });
