@@ -110,11 +110,16 @@ document.addEventListener("DOMContentLoaded", () => {
           document.getElementById("result-turbine-name").textContent = selectedTurbineName;
           document.getElementById("result-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
 
-          const resultSidebar = document.getElementById("result-sidebar");
-          resultSidebar.style.transform = "translateX(0)";
+          document.getElementById("result-sidebar").style.display = "block";
 
-          //graf
+          resultSidebar.classList.remove("collapsed");
+          resultSidebar.classList.add("expanded");
+          toggleBtn.textContent = "⮞ ⮜";
+
+          // graf
           const ctx = document.getElementById('energy-chart').getContext('2d');
+          const isCollapsed = resultSidebar.classList.contains("collapsed");
+
           new Chart(ctx, {
             type: 'line',
             data: {
@@ -125,16 +130,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 borderColor: 'rgba(75, 192, 192, 1)',
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 borderWidth: 2,
+                pointRadius: isCollapsed ? 0 : 2,
+                pointHoverRadius: isCollapsed ? 0 : 4,
+                tension: 0.3
               }]
             },
             options: {
               responsive: true,
+              maintainAspectRatio: false,
               plugins: {
-                legend: { position: 'top' },
+                legend: { position: 'top' }
               },
               scales: {
-                x: { title: { display: true, text: 'Tedni' } },
-                y: { title: { display: true, text: 'Energija (kWh)' } },
+                x: {
+                  title: { display: true, text: 'Tedni' },
+                  ticks: {
+                    maxTicksLimit: isCollapsed ? 5 : 12
+                  }
+                },
+                y: {
+                  title: { display: true, text: 'Energija (kWh)' },
+                  ticks: {
+                    stepSize: 10000,
+                      callback: function(value) {
+                      return value.toLocaleString();
+                    }
+                  }
+                }
               }
             }
           });
@@ -147,6 +169,21 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Napaka:", error);
       resultsElem.textContent = `Napaka: ${error.message}`;
+    }
+  });
+
+  const resultSidebar = document.getElementById("result-sidebar");
+  const toggleBtn = document.getElementById("toggle-result-sidebar");
+
+  toggleBtn.addEventListener("click", () => {
+    if (resultSidebar.classList.contains("expanded")) {
+      resultSidebar.classList.remove("expanded");
+      resultSidebar.classList.add("collapsed");
+      toggleBtn.textContent = "⮜ ⮞";
+    } else {
+      resultSidebar.classList.remove("collapsed");
+      resultSidebar.classList.add("expanded");
+      toggleBtn.textContent = "⮞ ⮜";
     }
   });
 

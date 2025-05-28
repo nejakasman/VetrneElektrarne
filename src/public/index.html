@@ -20,7 +20,7 @@
         <button id="toggleForm" class="btn btn-outline-primary ms-3">Dodaj lokacijo</button>
       </li>
       <li class="nav-item">
-        <a class="nav-link text-dark" href="dodajTurbino.html">Dodaj turbino</a>
+        <a class="btn btn-outline-primary ms-3" href="dodajTurbino.html">Dodaj turbino</a>
       </li>
 
 
@@ -44,7 +44,7 @@
       <select id="turbine-type" name="turbine-type" class="form-select">
       </select>
     </div>
-    <button id="calculate-energy" class="btn btn-success w-100">Izračunaj energijsko vrednost</button>
+    <button id="calculate-energy" class="btn btn-success w-100">Izračunaj potencial letne proizvodnje</button>
   </form>
 </div>
 
@@ -53,11 +53,21 @@
 
   <button id="windData">Pridobi podatke za leto 2024</button>
 
-  <div id="result-sidebar" class="position-fixed top-0 end-0 bg-light shadow p-4" style="width: 300px; height: 100vh; z-index: 1040; transform: translateX(100%); transition: transform 0.3s ease;">
-    <h5>Rezultati</h5>
-    <p><strong>Turbina:</strong> <span id="result-turbine-name"></span></p>
-    <p><strong>Letna proizvodnja:</strong> <span id="result-annual-energy"></span> kWh</p>
-    <canvas id="energy-chart" width="300" height="300"></canvas>
+  <div id="result-sidebar" class="collapsed shadow">
+    <div class="sidebar-header d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+      <h5 class="mb-0">Rezultati</h5>
+      <button id="toggle-result-sidebar" class="btn btn-outline-primary btn-sm ms-3" >Skrij</button>
+    </div>
+
+    <div class="sidebar-content p-3">
+      <p><strong>Turbina:</strong> <span id="result-turbine-name"></span></p>
+      <p><strong>Letna proizvodnja:</strong> <span id="result-annual-energy"></span> kWh</p>
+
+      <div class="detailed-result ratio ratio-4x3">
+        <canvas id="energy-chart"></canvas>
+      </div>
+
+    </div>
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
