@@ -63,6 +63,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultsElem = document.getElementById("results");
   const resultSidebar = document.getElementById("result-sidebar");
   const toggleBtn = document.getElementById("toggle-result-sidebar");
+  const historyList = document.getElementById("history-list");
+const loadHistoryBtn = document.getElementById("load-history-btn");
+
   let chartInstance = null;
   let firstTurbineData = null;
   let windDataCache = null;
@@ -272,4 +275,49 @@ document.addEventListener("DOMContentLoaded", () => {
       updateChart(firstTurbineData.weeklyEnergy, firstTurbineData.name, weeklyEnergy2, turbineName2);
     }
   });
+
+  // fetch + populate dropdown z zgodovino
+async function loadCalculationHistory() {
+  const history = await ipcRenderer.invoke('get-calculation-history');
+  historyList.innerHTML = '<option value="">Izberi prejšnji izračun...</option>';
+  history.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${new Date(item.datum).toLocaleString()}`;
+    option.dataset.data = JSON.stringify(item);
+    historyList.appendChild(option);
+  });
+}
+
+
+loadHistoryBtn.addEventListener("click", () => {
+  const selectedId = historyList.value;
+  if (!selectedId) return;
+
+  const selectedOption = historyList.options[historyList.selectedIndex];
+  const item = JSON.parse(selectedOption.dataset.data);
+
+  // posodobitev grafa
+  updateChart(JSON.parse(item.tedenska_energija), item.turbine_name);
+
+  // posodobitev v sidebaru
+  document.getElementById("result-turbine-name").textContent = item.turbine_name;
+  document.getElementById("result-annual-energy").textContent = Number(item.letna_energija).toFixed(2);
+
+  // Pinpoint na zameljevidu
+  if (window.currentMarker) {
+    map.removeLayer(window.currentMarker);
+  }
+  window.currentMarker = L.marker([item.latitude, item.longitude], { icon: redIcon }).addTo(map).bindPopup("Prejšnja izračunana lokacija").openPopup();
+  map.setView([item.latitude, item.longitude], 10);
+  // opcijski prikaz rezultatov v side-baru
+  document.getElementById("result-sidebar").style.display = "block";
+  resultSidebar.classList.remove("collapsed");
+  resultSidebar.classList.add("expanded");
+  toggleBtn.textContent = "⮞ ⮜";
+});
+
+
+loadCalculationHistory();
+
 });

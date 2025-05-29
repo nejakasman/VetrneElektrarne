@@ -206,3 +206,19 @@ ipcMain.handle('save-calculation-history', async (event, { latitude, longitude, 
     return { status: "error", message: err.message };
   }
 });
+
+ipcMain.handle('get-calculation-history', async () => {
+  return new Promise((resolve, reject) => {
+    db.all(`
+      SELECT ch.id, ch.letna_energija, ch.tedenska_energija, ch.datum,
+             l.latitude, l.longitude, t.name AS turbine_name
+      FROM Zgodovina_Izracunov ch
+      JOIN Lokacija l ON ch.lokacija_id = l.id
+      JOIN Turbine t ON ch.turbine_id = t.id
+      ORDER BY ch.datum DESC
+    `, [], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+});
