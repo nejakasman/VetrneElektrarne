@@ -202,6 +202,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
           //graf za prvo turbino
           updateChart(energyResult.weeklyEnergy, selectedTurbineName);
+            await ipcRenderer.invoke("save-calculation-history", {
+              latitude: lat,
+              longitude: lon,
+              turbineName: selectedTurbineName,
+              annualEnergy: energyResult.totalEnergy,
+              weeklyEnergy: energyResult.weeklyEnergy
+            });
         } else {
           resultsElem.textContent = `Napaka pri izračunu energije: ${energyResult.message}`;
         }

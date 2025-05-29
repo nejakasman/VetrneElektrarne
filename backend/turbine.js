@@ -156,3 +156,53 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName 
     return { status: 'error', message: error.message };
   }
 });
+
+ipcMain.handle('save-calculation-history', async (event, { latitude, longitude, turbineName, annualEnergy, weeklyEnergy }) => {
+  try {
+
+    let lokacijaId;
+    const locRow = await new Promise((resolve, reject) => {
+      db.get("SELECT id FROM Lokacija WHERE latitude = ? AND longitude = ?", [latitude, longitude], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    if (locRow) {
+      lokacijaId = locRow.id;
+    } else {
+      lokacijaId = await new Promise((resolve, reject) => {
+        db.run("INSERT INTO Lokacija (latitude, longitude) VALUES (?, ?)", [latitude, longitude], function(err) {
+          if (err) reject(err);
+          else resolve(this.lastID);
+        });
+      });
+    }
+
+   
+    const turbineRow = await new Promise((resolve, reject) => {
+      db.get("SELECT id FROM Turbine WHERE name = ?", [turbineName], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+    if (!turbineRow) throw new Error("Turbina ne obstaja.");
+    const turbineId = turbineRow.id;
+
+
+    await new Promise((resolve, reject) => {
+      db.run(
+        "INSERT INTO Zgodovina_Izracunov (lokacija_id, turbine_id, letna_energija, tedenska_energija) VALUES (?, ?, ?, ?)",
+        [lokacijaId, turbineId, annualEnergy, JSON.stringify(weeklyEnergy)],
+        function(err) {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
+
+    return { status: "success" };
+  } catch (err) {
+    console.error("Napaka pri shranjevanju Zgodovina_Izracunov:", err);
+    return { status: "error", message: err.message };
+  }
+});
