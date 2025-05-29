@@ -60,7 +60,7 @@ form {
 }
 
 #result-sidebar.expanded {
-  width: 79.5%; 
+  width: 79.5%;
 }
 
 #result-sidebar.collapsed {
@@ -86,7 +86,9 @@ form {
 #result-sidebar .sidebar-content {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
   align-items: center;
+  max-height: 80vh;
   text-align: center;
 }
 
