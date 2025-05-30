@@ -48,12 +48,19 @@
   </form>
   <div class="mb-3">
   <br>
-  <label for="history-list" class="form-label">Zgodovina izračunov:</label>
-  <select id="history-list" class="form-select">
-    <option value="">Izberi prejšnji izračun...</option>
-  </select>
+    <label for="history-list" class="form-label">Zgodovina izračunov:</label>
+    <select id="history-list" class="form-select">
+      <option value="">Izberi prejšnji izračun...</option>
+    </select>
   <button id="load-history-btn" class="btn btn-secondary mt-2">Naloži izračun</button>
-</div>
+  </div>
+  <div id="comparison-section" class="mb-3" style="display: none;">
+    <label for="compare-turbine-type" class="form-label">Izberi turbino za primerjavo:</label>
+    <select id="compare-turbine-type" name="compare-turbine-type" class="form-select">
+      <option value="">Izberi turbino</option>
+    </select>
+    <button id="compare-energy" class="btn btn-primary w-100 mt-2">Primerjaj z drugo turbino</button>
+  </div>
 </div>
 
   <label for="longitude">Longitude:</label>
@@ -75,14 +82,6 @@
 
       <div class="detailed-result ratio ratio-4x3">
         <canvas id="energy-chart"></canvas>
-      </div>
-
-      <div class="mt-3">
-        <label for="compare-turbine-type" class="form-label">Izberi turbino za primerjavo:</label>
-        <select id="compare-turbine-type" name="compare-turbine-type" class="form-select">
-          <option value="">Izberi turbino</option>
-        </select>
-        <button id="compare-energy" class="btn btn-primary w-100 mt-2">Primerjaj z drugo turbino</button>
       </div>
     </div>
 

@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultSidebar = document.getElementById("result-sidebar");
   const toggleBtn = document.getElementById("toggle-result-sidebar");
   const historyList = document.getElementById("history-list");
-const loadHistoryBtn = document.getElementById("load-history-btn");
+  const loadHistoryBtn = document.getElementById("load-history-btn");
 
   let chartInstance = null;
   let firstTurbineData = null;
@@ -162,6 +162,8 @@ const loadHistoryBtn = document.getElementById("load-history-btn");
   //izračun prve turbine
   document.getElementById("calculate-energy").addEventListener("click", async (event) => {
     event.preventDefault();
+    const comparisonSection = document.getElementById('comparison-section');
+    comparisonSection.style.display = 'block';
 
     const lat = parseFloat(document.getElementById("latitude").value);
     const lon = parseFloat(document.getElementById("longitude").value);
@@ -223,6 +225,7 @@ const loadHistoryBtn = document.getElementById("load-history-btn");
       resultsElem.textContent = `Napaka: ${error.message}`;
     }
   });
+
 
   //primerjava z drugo turbino
   document.getElementById("compare-energy").addEventListener("click", async () => {

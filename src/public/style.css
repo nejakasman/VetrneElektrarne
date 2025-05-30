@@ -64,7 +64,7 @@ form {
 }
 
 #result-sidebar.collapsed {
-  width: 300px;
+  width: 380px;
 }
 #result-sidebar.collapsed .detailed-result {
   display: block;
