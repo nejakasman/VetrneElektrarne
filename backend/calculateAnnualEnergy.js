@@ -1,7 +1,6 @@
 const calculateAnnualEnergy = (windData, turbineData) => {
   let totalEnergy = 0;
   const weeklyEnergy = new Array(52).fill(0);
-
   const dailyEnergy = []; // shrani total energy za vsak dan
 
   // pretvori podatke za 24ur v 1 dan
@@ -12,11 +11,8 @@ const calculateAnnualEnergy = (windData, turbineData) => {
       const windSpeed = windData[i + h].wind_speed_100m;
 
       const turbinePower = turbineData.find(td => Number(td.speed) >= windSpeed)?.power || 0;
-
-
       dailyTotal += Number(turbinePower);
     }
-
     dailyEnergy.push(dailyTotal);
     totalEnergy += dailyTotal;
   }
@@ -29,7 +25,19 @@ const calculateAnnualEnergy = (windData, turbineData) => {
     }
   });
 
-  return { totalEnergy, weeklyEnergy };
+  //mesečni izračun
+  const calculateMonthlyEnergy = (dailyEnergy) => {
+    const monthlyEnergy = new Array(12).fill(0);
+    dailyEnergy.forEach((energy, index) => {
+      const month = Math.floor(index / (365 / 12));
+      if (month < 12) monthlyEnergy[month] += energy;
+    });
+    return monthlyEnergy;
+  };
+
+  const monthlyEnergy = calculateMonthlyEnergy(dailyEnergy);
+
+  return { totalEnergy, weeklyEnergy, monthlyEnergy };
 };
 
 module.exports = { calculateAnnualEnergy };
