@@ -148,9 +148,9 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName 
 
     if (!turbineData || turbineData.length === 0) throw new Error("Ni podatkov o turbini.");
 
-    const { totalEnergy, weeklyEnergy } = calculateAnnualEnergy(windData, turbineData);
+    const { totalEnergy, weeklyEnergy, monthlyEnergy } = calculateAnnualEnergy(windData, turbineData);
 
-    return { status: 'success', totalEnergy, weeklyEnergy };
+    return { status: 'success', totalEnergy, weeklyEnergy, monthlyEnergy };
   } catch (error) {
     console.error("Napaka pri izračunu letne energije:", error);
     return { status: 'error', message: error.message };
@@ -178,7 +178,7 @@ ipcMain.handle('save-calculation-history', async (event, { latitude, longitude, 
       });
     }
 
-   
+
     const turbineRow = await new Promise((resolve, reject) => {
       db.get("SELECT id FROM Turbine WHERE name = ?", [turbineName], (err, row) => {
         if (err) reject(err);
