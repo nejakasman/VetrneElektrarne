@@ -138,8 +138,8 @@ document.addEventListener("DOMContentLoaded", () => {
       fill: false,
     },
     ...comparedTurbines.map((turbine, index) => ({
-      label: `(${turbine.name}) (kWh)`,
-      data: turbine.weeklyEnergy,
+      label: `${chartType === 'weekly' ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbine.name}) (kWh)`,
+      data: chartType === 'weekly' ? turbine.weeklyEnergy : turbine.monthlyEnergy,
       borderColor: `hsl(${(index * 60) % 360}, 100%, 50%)`,
       backgroundColor: `hsla(${(index * 60) % 360}, 100%, 50%, 0.2)`,
       borderWidth: 2,
@@ -319,11 +319,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (energyResult.status === "success") {
       comparedTurbines.push({
         name: compareTurbineName,
-        weeklyEnergy: energyResult.weeklyEnergy
+        weeklyEnergy: energyResult.weeklyEnergy,
+        monthlyEnergy: energyResult.monthlyEnergy
       });
 
       // Posodobi prikaz
-      updateChart(firstTurbineData.weeklyEnergy, firstTurbineData.name);
+      const energyData = chartType === 'weekly' ? firstTurbineData.weeklyEnergy : firstTurbineData.monthlyEnergy;
+      updateChart(energyData, firstTurbineData.name);
+
       renderComparedTurbinesList();
     } else {
       resultsElem.textContent = `Napaka pri izračunu energije za primerjavo: ${energyResult.message}`;
@@ -378,7 +381,8 @@ function renderComparedTurbinesList() {
     removeBtn.textContent = "Odstrani";
     removeBtn.addEventListener("click", () => {
       comparedTurbines.splice(index, 1);
-      updateChart(firstTurbineData.weeklyEnergy, firstTurbineData.name);
+      const energyData = chartType === 'weekly' ? firstTurbineData.weeklyEnergy : firstTurbineData.monthlyEnergy;
+      updateChart(energyData, firstTurbineData.name);
       renderComparedTurbinesList();
     });
 

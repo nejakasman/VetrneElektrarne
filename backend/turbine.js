@@ -105,10 +105,10 @@ ipcMain.handle('turbine-delete', (event, name) => {
   return new Promise((resolve, reject) => {
     db.run(`DELETE FROM Turbine WHERE name = ?`, [name], function(err) {
       if (err) {
-        return reject({ status: 'error', message: err.message });
+        return reject(new Error(err.message));
       }
       if (this.changes === 0) {
-        return resolve({ status: 'error', message: 'Turbina ni najdena.' });
+        return reject(new Error('Turbina ni najdena.'));
       }
       resolve({ status: 'success', message: 'Turbina izbrisana.' });
     });

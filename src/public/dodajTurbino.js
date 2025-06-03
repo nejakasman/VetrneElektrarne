@@ -128,12 +128,18 @@ document.addEventListener("DOMContentLoaded", () => {
   form.onsubmit = originalSubmit;
 
   window.izbrisi = (name) => {
-    if (!confirm(`Izbrisati ${name}?`)) return;
+  if (!confirm(`Izbrisati ${name}?`)) return;
 
-    ipcRenderer.invoke('turbine-delete', name).then(() => {
+  ipcRenderer.invoke('turbine-delete', name)
+    .then(() => {
       naloziTurbine();
+    })
+    .catch(err => {
+      alert("Napaka pri brisanju: " + err.message);
+      console.error(err);
     });
-  };
+};
+
 
   window.uredi = (name) => {
     ipcRenderer.invoke('turbine-read-all').then(turbines => {
