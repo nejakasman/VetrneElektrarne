@@ -137,16 +137,26 @@ document.addEventListener("DOMContentLoaded", () => {
       tension: 0.3,
       fill: false,
     },
-    ...comparedTurbines.map((turbine, index) => ({
-      label: `${chartType === 'weekly' ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbine.name}) (kWh)`,
-      data: chartType === 'weekly' ? turbine.weeklyEnergy : turbine.monthlyEnergy,
-      borderColor: `hsl(${(index * 60) % 360}, 100%, 50%)`,
-      backgroundColor: `hsla(${(index * 60) % 360}, 100%, 50%, 0.2)`,
-      borderWidth: 2,
-      pointRadius: isCollapsed ? 0 : 2,
-      pointHoverRadius: isCollapsed ? 0 : 4,
-      tension: 0.3
-    }))
+    ...comparedTurbines.map((turbine, index) => {
+      const hue = (index * 60) % 360;
+      const isYellow = hue === 60;
+      const adjustedHue = isYellow ? 50 : hue;
+      const adjustedLightness = isYellow ? 45 : 50;
+
+      const color = `hsl(${adjustedHue}, 100%, ${adjustedLightness}%)`;
+      const bgColor = `hsla(${adjustedHue}, 100%, ${adjustedLightness}%, 0.2)`;
+
+      return {
+        label: `${chartType === 'weekly' ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbine.name}) (kWh)`,
+        data: chartType === 'weekly' ? turbine.weeklyEnergy : turbine.monthlyEnergy,
+        borderColor: color,
+        backgroundColor: bgColor,
+        borderWidth: 2,
+        pointRadius: isCollapsed ? 0 : 2,
+        pointHoverRadius: isCollapsed ? 0 : 4,
+        tension: 0.3
+  };
+})
   ];
 
   if (energyData2 && turbineName2) {
