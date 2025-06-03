@@ -43,23 +43,29 @@ document.addEventListener("DOMContentLoaded", () => {
         accordionCollapse.setAttribute('data-bs-parent', '#turbineAccordion');
 
         const accordionBody = document.createElement('div');
-        accordionBody.classList.add('accordion-body');
+        accordionBody.classList.add('accordion-body', 'side-by-side');
 
         const actionButtons = document.createElement('div');
-        actionButtons.classList.add('mb-3');
+        actionButtons.classList.add('mb-3', 'd-flex', 'gap-2');
         actionButtons.innerHTML = `
-          <button class="btn btn-warning me-2" onclick="uredi('${t.name}')">Uredi</button>
-          <button class="btn btn-danger" onclick="izbrisi('${t.name}')">Izbriši</button>
+          <button class="btn custom-btn custom-btn-edit" onclick="uredi('${t.name}')">Uredi</button>
+          <button class="btn custom-btn custom-btn-delete" onclick="izbrisi('${t.name}')">Izbriši</button>
         `;
         accordionBody.appendChild(actionButtons);
 
+        const tableSection = document.createElement('div');
+        tableSection.classList.add('table-section');
+
+        const tableContainer = document.createElement('div');
+        tableContainer.classList.add('table-container');
+
         const table = document.createElement('table');
-        table.classList.add('table', 'table-striped', 'mb-3');
+        table.classList.add('table', 'table-striped', 'table-smaller', 'mb-0');
         table.innerHTML = `
           <thead>
             <tr>
-              <th>Hitrost vetra (m/s)</th>
-              <th>Energijska vrednost (kW)</th>
+              <th>Hitrost (m/s)</th>
+              <th>Moč (kW)</th>
             </tr>
           </thead>
           <tbody>
@@ -71,18 +77,27 @@ document.addEventListener("DOMContentLoaded", () => {
             `).join('')}
           </tbody>
         `;
+        tableContainer.appendChild(table);
+        tableSection.appendChild(tableContainer);
+        accordionBody.appendChild(tableSection);
 
+        const chartSection = document.createElement('div');
+        chartSection.classList.add('chart-section');
         const canvas = document.createElement('canvas');
+        chartSection.appendChild(canvas);
+        accordionBody.appendChild(chartSection);
+
         new Chart(canvas.getContext('2d'), {
           type: 'line',
           data: {
             labels: t.speeds,
             datasets: [{
-              label: `Energijska vrednost (${t.name})`,
+              label: `Moč (${t.name})`,
               data: t.powers,
-              borderColor: 'rgba(75, 192, 192, 1)',
-              backgroundColor: 'rgba(75, 192, 192, 0.2)',
+              borderColor: '#1a3c6d',
+              backgroundColor: 'rgba(26, 60, 109, 0.2)',
               fill: true,
+              tension: 0.4,
             }]
           },
           options: {
@@ -91,14 +106,12 @@ document.addEventListener("DOMContentLoaded", () => {
               legend: { position: 'top' },
             },
             scales: {
-              x: { title: { display: true, text: 'Hitrost vetra (m/s)' }},
-              y: { title: { display: true, text: 'Energijska vrednost (kW)' }},
+              x: { title: { display: true, text: 'Hitrost vetra (m/s)', color: '#1a3c6d' }},
+              y: { title: { display: true, text: 'Moč (kW)', color: '#1a3c6d' }},
             }
           }
         });
 
-        accordionBody.appendChild(table);
-        accordionBody.appendChild(canvas);
         accordionCollapse.appendChild(accordionBody);
         accordionItem.appendChild(accordionCollapse);
         accordion.appendChild(accordionItem);
@@ -151,7 +164,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('powers').value = turbina.powers.join(',');
       const tabTrigger = new bootstrap.Tab(document.querySelector('#add-tab'));
       tabTrigger.show();
-
 
       form.onsubmit = function (e) {
         e.preventDefault();

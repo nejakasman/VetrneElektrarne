@@ -86,10 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
     afterDraw(chart) {
       const { ctx, chartArea } = chart;
       const isWeekly = chartType === 'weekly';
-      const buttonText = isWeekly ? 'Mesečni graf' : 'Tedenski graf';
-      const buttonWidth = 120;
-      const buttonHeight = 30;
-      const padding = 10;
+      const buttonText = isWeekly ? 'Pojdi na mesečni graf' : 'Pojdi na tedenski graf';
+      const buttonWidth = 150;
+      const buttonHeight = 20;
+      const padding = 8;
 
       const x = chart.width - buttonWidth - padding;
       const y = padding;
@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.strokeRect(x, y, buttonWidth, buttonHeight);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '12px Arial';
+      ctx.font = '11px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(buttonText, x + buttonWidth / 2, y + buttonHeight / 2);

@@ -145,8 +145,9 @@ ipcMain.handle('turbine-get-speeds', (event, { turbineName }) => {
 ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName }) => {
   try {
     const turbineData = await getTurbineSpeeds(turbineName);
+    // console.log("Podatki o turbini:", turbineData);
 
-    if (!turbineData || turbineData.length === 0) throw new Error("Ni podatkov o turbini.");
+    if (!turbineData || turbineData.speeds.length === 0) throw new Error("Ni podatkov o turbini.");
 
     const { totalEnergy, weeklyEnergy, monthlyEnergy } = calculateAnnualEnergy(windData, turbineData);
 
