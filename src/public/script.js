@@ -33,30 +33,9 @@ map.on('click', function (e) {
   document.getElementById('longitude').value = lon;
 });
 
-
-
-
 // Sidebar
 document.getElementById("toggleForm").addEventListener("click", () => {
   document.getElementById("sidebar").style.transform = "translateX(0)";
-});
-
-
-
-//obrazec za lokacijo
-document.getElementById("location-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const name = document.getElementById("location-name").value;
-  const lat = parseFloat(document.getElementById("latitude").value);
-  const lon = parseFloat(document.getElementById("longitude").value);
-
-  if (name && !isNaN(lat) && !isNaN(lon)) {
-    if (currentMarker) {
-      map.removeLayer(currentMarker);
-    }
-    currentMarker = L.marker([lat, lon], { icon: redIcon }).addTo(map).bindPopup(name).openPopup();
-  }
 });
 
 
@@ -76,6 +55,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let compareTurbineData = null;
   let windDataCache = null;
   let chartType = 'weekly';
+
+  let comparedTurbines = []; // za več turbin za primerjavo
+
 
   //dropdown meni - turbine
   async function naloziDropdown() {
@@ -104,10 +86,10 @@ document.addEventListener("DOMContentLoaded", () => {
     afterDraw(chart) {
       const { ctx, chartArea } = chart;
       const isWeekly = chartType === 'weekly';
-      const buttonText = isWeekly ? 'Mesečni graf' : 'Tedenski graf';
-      const buttonWidth = 120;
-      const buttonHeight = 30;
-      const padding = 10;
+      const buttonText = isWeekly ? 'Pojdi na mesečni graf' : 'Pojdi na tedenski graf';
+      const buttonWidth = 150;
+      const buttonHeight = 20;
+      const padding = 8;
 
       const x = chart.width - buttonWidth - padding;
       const y = padding;
@@ -120,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ctx.strokeRect(x, y, buttonWidth, buttonHeight);
 
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '12px Arial';
+      ctx.font = '11px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(buttonText, x + buttonWidth / 2, y + buttonHeight / 2);
@@ -155,6 +137,26 @@ document.addEventListener("DOMContentLoaded", () => {
       tension: 0.3,
       fill: false,
     },
+    ...comparedTurbines.map((turbine, index) => {
+      const hue = (index * 60) % 360;
+      const isYellow = hue === 60;
+      const adjustedHue = isYellow ? 50 : hue;
+      const adjustedLightness = isYellow ? 45 : 50;
+
+      const color = `hsl(${adjustedHue}, 100%, ${adjustedLightness}%)`;
+      const bgColor = `hsla(${adjustedHue}, 100%, ${adjustedLightness}%, 0.2)`;
+
+      return {
+        label: `${chartType === 'weekly' ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbine.name}) (kWh)`,
+        data: chartType === 'weekly' ? turbine.weeklyEnergy : turbine.monthlyEnergy,
+        borderColor: color,
+        backgroundColor: bgColor,
+        borderWidth: 2,
+        pointRadius: isCollapsed ? 0 : 2,
+        pointHoverRadius: isCollapsed ? 0 : 4,
+        tension: 0.3
+  };
+})
   ];
 
   if (energyData2 && turbineName2) {
@@ -168,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fill: false,
     });
   }
+
 
   chartInstance = new Chart(ctx, {
     type: isWeekly ? 'line' : 'bar',
@@ -255,10 +258,19 @@ document.addEventListener("DOMContentLoaded", () => {
             monthlyEnergy: energyResult.monthlyEnergy
           };
 
+          // Posodobitev prikaza
           document.getElementById("result-turbine-name").textContent = selectedTurbineName;
           document.getElementById("result-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
-          document.getElementById("result-compare-turbine-name").textContent = "Ni izbrano";
-          document.getElementById("result-compare-annual-energy").textContent = "Ni izračunano";
+
+          // Odstranitev nepotrebnih elementov ali preverjanje njihovega obstoja
+          const compareNameElem = document.getElementById("result-compare-turbine-name");
+          const compareEnergyElem = document.getElementById("result-compare-annual-energy");
+
+          if (compareNameElem && compareEnergyElem) {
+            compareNameElem.textContent = "Ni izbrano";
+            compareEnergyElem.textContent = "Ni izračunano";
+          }
+
           document.getElementById("result-sidebar").style.display = "block";
           resultSidebar.classList.remove("collapsed");
           resultSidebar.classList.add("expanded");
@@ -287,51 +299,53 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Napaka:", error);
       resultsElem.textContent = `Napaka: ${error.message}`;
     }
-  });
+});
 
-
-  //primerjava z drugo turbino
+    //primerjava z drugimi turbinami
   document.getElementById("compare-energy").addEventListener("click", async () => {
-    const compareTurbineName = compareTurbineDropdown.value;
+  const compareTurbineName = document.getElementById("compare-turbine-type").value;
 
-    if (!compareTurbineName) {
-      resultsElem.textContent = "Prosim, izberite turbino za primerjavo.";
-      return;
-    }
+  if (!compareTurbineName) {
+    resultsElem.textContent = "Prosim, izberite turbino za primerjavo.";
+    return;
+  }
 
-    if (!windDataCache) {
-      resultsElem.textContent = "Ni vetrovnih podatkov za primerjavo.";
-      return;
-    }
+  if (!windDataCache) {
+    resultsElem.textContent = "Ni vetrovnih podatkov za primerjavo.";
+    return;
+  }
 
-    try {
-      const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
-        windData: windDataCache,
-        turbineName: compareTurbineName,
+  if (comparedTurbines.some(t => t.name === compareTurbineName)) {
+    resultsElem.textContent = "Ta turbina je že na grafu.";
+    return;
+  }
+
+  try {
+    const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
+      windData: windDataCache,
+      turbineName: compareTurbineName,
+    });
+
+    if (energyResult.status === "success") {
+      comparedTurbines.push({
+        name: compareTurbineName,
+        weeklyEnergy: energyResult.weeklyEnergy,
+        monthlyEnergy: energyResult.monthlyEnergy
       });
 
-      if (energyResult.status === "success") {
-        compareTurbineData = {
-          name: compareTurbineName,
-          totalEnergy: energyResult.totalEnergy,
-          weeklyEnergy: energyResult.weeklyEnergy,
-          monthlyEnergy: energyResult.monthlyEnergy
-        };
+      // Posodobi prikaz
+      const energyData = chartType === 'weekly' ? firstTurbineData.weeklyEnergy : firstTurbineData.monthlyEnergy;
+      updateChart(energyData, firstTurbineData.name);
 
-        document.getElementById("result-compare-turbine-name").textContent = compareTurbineName;
-        document.getElementById("result-compare-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
-
-        const energyData1 = chartType === 'weekly' ? firstTurbineData.weeklyEnergy : firstTurbineData.monthlyEnergy;
-        const energyData2 = chartType === 'weekly' ? energyResult.weeklyEnergy : energyResult.monthlyEnergy;
-        updateChart(energyData1, firstTurbineData.name, energyData2, compareTurbineName);
-      } else {
-        resultsElem.textContent = `Napaka pri izračunu energije za primerjavo: ${energyResult.message}`;
-      }
-    } catch (error) {
-      console.error("Napaka pri primerjavi:", error);
-      resultsElem.textContent = `Napaka: ${error.message}`;
+      renderComparedTurbinesList();
+    } else {
+      resultsElem.textContent = `Napaka pri izračunu energije za primerjavo: ${energyResult.message}`;
     }
-  });
+  } catch (error) {
+    console.error("Napaka pri primerjavi:", error);
+    resultsElem.textContent = `Napaka: ${error.message}`;
+  }
+});
 
   toggleBtn.addEventListener("click", () => {
     if (resultSidebar.classList.contains("expanded")) {
@@ -355,20 +369,51 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+// izris seznama primerjanih turbin
+function renderComparedTurbinesList() {
+  const listContainer = document.getElementById("compared-turbines-list");
+  listContainer.innerHTML = "";
 
-  // fetch + populate dropdown z zgodovino
-async function loadCalculationHistory() {
-  const history = await ipcRenderer.invoke('get-calculation-history');
-  historyList.innerHTML = '<option value="">Izberi prejšnji izračun...</option>';
-  history.forEach(item => {
-    const option = document.createElement('option');
-    option.value = item.id;
-    option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${new Date(item.datum).toLocaleString()}`;
-    option.dataset.data = JSON.stringify(item);
-    historyList.appendChild(option);
+  if (comparedTurbines.length === 0) {
+    listContainer.innerHTML = '<div class="text-muted">Ni izbrano</div>';
+    return;
+  }
+
+  comparedTurbines.forEach((turbine, index) => {
+    const container = document.createElement("div");
+    container.className = "d-flex justify-content-between align-items-center mb-2";
+
+    const info = document.createElement("div");
+    info.innerHTML = `<strong>${turbine.name}</strong>: ${turbine.weeklyEnergy.reduce((a, b) => a + b, 0).toFixed(2)} kWh`;
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "btn btn-sm btn-danger";
+    removeBtn.textContent = "Odstrani";
+    removeBtn.addEventListener("click", () => {
+      comparedTurbines.splice(index, 1);
+      const energyData = chartType === 'weekly' ? firstTurbineData.weeklyEnergy : firstTurbineData.monthlyEnergy;
+      updateChart(energyData, firstTurbineData.name);
+      renderComparedTurbinesList();
+    });
+
+    container.appendChild(info);
+    container.appendChild(removeBtn);
+    listContainer.appendChild(container);
   });
 }
 
+// fetch + populate dropdown z zgodovino
+async function loadCalculationHistory() {
+const history = await ipcRenderer.invoke('get-calculation-history');
+historyList.innerHTML = '<option value="">Izberi prejšnji izračun...</option>';
+history.forEach(item => {
+  const option = document.createElement('option');
+  option.value = item.id;
+  option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${new Date(item.datum).toLocaleString()}`;
+  option.dataset.data = JSON.stringify(item);
+  historyList.appendChild(option);
+});
+}
 
 loadHistoryBtn.addEventListener("click", () => {
   const selectedId = historyList.value;
@@ -388,15 +433,14 @@ loadHistoryBtn.addEventListener("click", () => {
   if (window.currentMarker) {
     map.removeLayer(window.currentMarker);
   }
-  window.currentMarker = L.marker([item.latitude, item.longitude], { icon: redIcon }).addTo(map).bindPopup("Prejšnja izračunana lokacija").openPopup();
+  window.currentMarker = L.marker([item.latitude, item.longitude], { icon: windTurbineIcon }).addTo(map).bindPopup("Prejšnja izračunana lokacija").openPopup();
   map.setView([item.latitude, item.longitude], 10);
   // opcijski prikaz rezultatov v side-baru
   document.getElementById("result-sidebar").style.display = "block";
   resultSidebar.classList.remove("collapsed");
   resultSidebar.classList.add("expanded");
   toggleBtn.textContent = "⮞ ⮜";
-});
-
+})
 
 loadCalculationHistory();
 

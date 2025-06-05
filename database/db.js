@@ -57,10 +57,10 @@ function initDatabase() {
         lokacija_id INTEGER,
         turbine_id INTEGER,
         letna_energija REAL,
-        tedenska_energija TEXT, 
+        tedenska_energija TEXT,
         datum DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (lokacija_id) REFERENCES Lokacija(id),
-        FOREIGN KEY (turbine_id) REFERENCES Turbine(id)
+        FOREIGN KEY (lokacija_id) REFERENCES Lokacija(id) ON DELETE CASCADE,
+        FOREIGN KEY (turbine_id) REFERENCES Turbine(id) ON DELETE CASCADE
       )
     `);
   });

@@ -105,10 +105,10 @@ ipcMain.handle('turbine-delete', (event, name) => {
   return new Promise((resolve, reject) => {
     db.run(`DELETE FROM Turbine WHERE name = ?`, [name], function(err) {
       if (err) {
-        return reject({ status: 'error', message: err.message });
+        return reject(new Error(err.message));
       }
       if (this.changes === 0) {
-        return resolve({ status: 'error', message: 'Turbina ni najdena.' });
+        return reject(new Error('Turbina ni najdena.'));
       }
       resolve({ status: 'success', message: 'Turbina izbrisana.' });
     });
@@ -145,8 +145,9 @@ ipcMain.handle('turbine-get-speeds', (event, { turbineName }) => {
 ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName }) => {
   try {
     const turbineData = await getTurbineSpeeds(turbineName);
+    // console.log("Podatki o turbini:", turbineData);
 
-    if (!turbineData || turbineData.length === 0) throw new Error("Ni podatkov o turbini.");
+    if (!turbineData || turbineData.speeds.length === 0) throw new Error("Ni podatkov o turbini.");
 
     const { totalEnergy, weeklyEnergy, monthlyEnergy } = calculateAnnualEnergy(windData, turbineData);
 

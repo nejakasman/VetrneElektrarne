@@ -1,4 +1,3 @@
-
 const { db } = require('../database/db');
 
 function getTurbineSpeeds(turbineName) {
@@ -9,11 +8,28 @@ function getTurbineSpeeds(turbineName) {
 
       const turbineId = row.id;
 
-      db.all("SELECT speed, power FROM Turbine_Hitrosti WHERE turbine_id = ?", [turbineId], (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
+      const query = `
+        SELECT CAST(speed AS REAL) AS speed, power
+        FROM Turbine_Hitrosti
+        WHERE turbine_id = ?
+        ORDER BY speed ASC
+      `;
+
+      db.all(query, [turbineId], (err, rows) => {
+        if (err) return reject(err);
+
+        const speeds = [];
+        const powers = [];
+
+        rows.forEach(({ speed, power }) => {
+          speeds.push(parseFloat(speed)); // Pretvori v številko, če še ni
+          powers.push(parseFloat(power));
+        });
+
+        resolve({ speeds, powers });
       });
     });
   });
 }
+
 module.exports = { getTurbineSpeeds };
