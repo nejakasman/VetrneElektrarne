@@ -29,7 +29,9 @@
 </nav>
 
 <div id="sidebar" class="position-fixed top-0 start-0 bg-light shadow p-4" style="width: 300px; height: 100vh; z-index: 1040; transform: translateX(-100%); transition: transform 0.3s ease;">
+  <br><br>
   <h5>Dodaj lokacijo</h5>
+  <br>
   <form id="location-form">
     <div class="mb-3">
       <label for="latitude" class="form-label">Širina:</label>
@@ -39,6 +41,7 @@
       <label for="longitude" class="form-label">Dolžina:</label>
       <input type="text" id="longitude" name="longitude" class="form-control" placeholder="14.5058">
     </div>
+    <br>
     <div class="mb-3">
       <label for="turbine-type" class="form-label">Vrsta turbine:</label>
       <select id="turbine-type" name="turbine-type" class="form-select">
@@ -46,20 +49,21 @@
     </div>
     <button id="calculate-energy" class="btn btn-success w-100">Izračunaj potencial letne proizvodnje</button>
   </form>
-  <div class="mb-3">
-  <br>
-    <label for="history-list" class="form-label">Zgodovina izračunov:</label>
-    <select id="history-list" class="form-select">
-      <option value="">Izberi prejšnji izračun...</option>
-    </select>
-  <button id="load-history-btn" class="btn btn-secondary mt-2">Naloži izračun</button>
-  </div>
+<br><br>
   <div id="comparison-section" class="mb-3" style="display: none;">
     <label for="compare-turbine-type" class="form-label">Izberi turbino za primerjavo:</label>
     <select id="compare-turbine-type" name="compare-turbine-type" class="form-select">
       <option value="">Izberi turbino</option>
     </select>
-    <button id="compare-energy" class="btn btn-primary w-100 mt-2">Primerjaj z drugo turbino</button>
+    <button id="compare-energy" class="btn btn-success w-100 mt-2">Primerjaj z drugo turbino</button>
+  </div>
+    <div class="mb-3">
+  <br><br>
+    <label for="history-list" class="form-label">Zgodovina izračunov:</label>
+    <select id="history-list" class="form-select">
+      <option value="">Izberi prejšnji izračun...</option>
+    </select>
+  <button id="load-history-btn" class="btn btn-secondary mt-2">Naloži izračun</button>
   </div>
 </div>
 

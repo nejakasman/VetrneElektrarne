@@ -31,6 +31,8 @@ map.on('click', function (e) {
 
   document.getElementById('latitude').value = lat;
   document.getElementById('longitude').value = lon;
+
+  document.getElementById("sidebar").style.transform = "translateX(0)";
 });
 
 // Sidebar
