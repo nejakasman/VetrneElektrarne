@@ -1,11 +1,16 @@
 const { app, BrowserWindow } = require('electron');
 const { initDatabase } = require('../database/db');
+const remoteMain = require('@electron/remote/main'); 
+
+remoteMain.initialize();
 
 app.whenReady().then(() => {
   initDatabase();
 });
 
 require('../backend/turbine');
+require('../backend/pdfPorocilo');
+
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -16,6 +21,7 @@ function createWindow() {
       contextIsolation: false
     }
   });
+  remoteMain.enable(win.webContents);
   win.loadFile('src/public/index.html');
   win.webContents.openDevTools();
 }

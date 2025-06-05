@@ -1,5 +1,5 @@
-const { ipcRenderer } = require('electron');
-
+const { ipcRenderer, remote } = require('electron');
+const { dialog } = require('@electron/remote');
 //Leaflet inicializacija
 const map = L.map('map').setView([46.05, 14.5], 8);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -400,4 +400,44 @@ loadHistoryBtn.addEventListener("click", () => {
 
 loadCalculationHistory();
 
+// pridobivanje podatkov za PDF
+document.getElementById('generate-pdf-btn').addEventListener('click', async () => {
+  // dialog za shranjevanje PDF
+  const { filePath, canceled } = await dialog.showSaveDialog({
+    title: 'Shrani PDF poročilo',
+    defaultPath: 'porocilo.pdf',
+    filters: [{ name: 'PDF', extensions: ['pdf'] }]
+  });
+
+  if (canceled || !filePath) return; // user je preklical
+
+  const location = {
+    latitude: document.getElementById('latitude').value,
+    longitude: document.getElementById('longitude').value
+  };
+
+  const turbines = [firstTurbineData]; 
+  const windData = windDataCache;
+  const energyResults = [firstTurbineData]; 
+  if (compareTurbineData) {
+  turbines.push(compareTurbineData);
+  energyResults.push(compareTurbineData);
+}
+
+  const result = await ipcRenderer.invoke('generate-pdf-report', {
+    location,
+    turbines,
+    windData,
+    energyResults,
+    filePath
+  });
+
+  if (result.status === 'success') {
+    alert('PDF poročilo je bilo ustvarjeno: ' + result.filePath);
+    require('electron').shell.openPath(result.filePath);
+  } else {
+    alert('Napaka pri generiranju PDF: ' + result.message);
+  }
 });
+});
+
