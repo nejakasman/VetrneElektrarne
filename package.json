@@ -29,6 +29,7 @@
     "geolib": "^3.3.4",
     "node-fetch": "^2.7.0",
     "pdfkit": "^0.17.1",
+    "puppeteer": "^24.10.0",
     "sqlite3": "^5.1.7"
   }
 }

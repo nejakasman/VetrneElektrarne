@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
 const fetch = require('node-fetch');
+const puppeteer = require('puppeteer');
 
 async function getLocationName(lat, lon) {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
@@ -17,8 +18,59 @@ async function getLocationName(lat, lon) {
   }
 }
 
-async function getMapImage(lat, lon) {
-  return null;
+//pridobivanje statične slike zemljevida za PDF
+
+async function getLeafletMapImage(lat, lon) {
+  const mapPath = path.join(__dirname, 'map.png');
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8"/>
+      <title>Map</title>
+    <style>
+    #map { width: 600px; height: 300px; }
+    html, body { margin: 0; padding: 0; }
+    .leaflet-control-container, .leaflet-control-attribution { display: none !important; }
+    </style>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    </head>
+    <body>
+      <div id="map"></div>
+      <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+      <script>
+        var map = L.map('map').setView([${lat}, ${lon}], 12);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19
+        }).addTo(map);
+        var windTurbineIcon = L.icon({
+        iconUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAACiUlEQVR4nNWZO2sVQRSAP5OIIj7w1fhGxD8gqGBhpYJGkBRCQFBQURBFxdJCBUsVxcLCNzZCbMREsRAEYzQoEsQHYqr4SrAJNmq4rhw4F8Jl7+ycvXfvznxwmj2zc+e7u7N7ZhaKZS/wHfgG7CdSuoBkUvwDdhIZU4HhGpFEr850ImJ3ikQ1uomIJw6Rx0TCfGDCIVLRNsHT7ZCoxg4i4JKHyDki4KWHyACB0wH89hAZB6YQMKs8JKqxhIDZahDZRMAcMYgEXXudNYicIWCuGERuEDD3DCK9BMxTg8hzAuadQeQjATNqEBkjUDZmVL21MaHnBMNs4KKW54kxZPl7G5hXtsR24ItjoA+AxVqO9DnajQCdZQjM0veApZ5a6tH+KjCzVRLrgM+et45VJAE+AWuLljgM/DXMgT6VEYmHhvP+AIeKEJAtnGs5JnOjcQeY0SyJhcBgCRKJhqw4FzQqsVzfwEnJ8QFYlldiZcajtdUxAqywSswx1k1ZpchYk/p6qy9gL9qMT5h6IVfzqE5WiWPA1yb02+u7cbGnwR96DxwApqX0LccONmHe7fIReZWj44qWI5sn/Vtt+mnhtUaXHkPbbNH3TJ4abdBH5Jehwx+6ayjbQLWcSml/OqXdauCCcQkw7iNyP6MTmbjXdetHNuTqkVaL3cz4ptIJ3AJ+ZoxBxpjJXOA88EZrKlmS3gWOA+uBdp9O6jwwHnme2w5sAE4APcAL/XA0pGOTMbaMoRQRORYdoykiciwqOuo8jSo6F6JhkWOiSi4a1jhEJBcN2xwikouGfQ4RyUXDSYeI5KLhskNEctHQ4xCRXDT0O0QkFw3DDhHJlcpAjnVDo9FfhIjrdikqnvmO7j+Q3vJ1UQWy6QAAAABJRU5ErkJggg==',
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+        });
+        L.marker([${lat}, ${lon}], {icon: windTurbineIcon}).addTo(map);
+      </script>
+    </body>
+    </html>
+  `;
+  try {
+    const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox'] });
+    const page = await browser.newPage();
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    await new Promise(resolve => setTimeout(resolve, 2000)); 
+
+    const mapElement = await page.$('#map');
+    if (!mapElement) {
+      await browser.close();
+      throw new Error('Map element not found');
+    }
+    await mapElement.screenshot({ path: mapPath });
+    await browser.close();
+    return mapPath;
+  } catch (err) {
+    return null;
+  }
 }
 
 ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windData, energyResults, filePath }) => {
@@ -55,11 +107,18 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     doc.text(`Datum: ${new Date().toLocaleString()}`);
     doc.moveDown(2);
 
-    const mapImage = await getMapImage(location.latitude, location.longitude);
+    
+    let mapImage;
+    try {
+    mapImage = await getLeafletMapImage(location.latitude, location.longitude);
+    } catch (e) {
+    mapImage = null;
+    }
     if (mapImage) {
-      doc.image(mapImage, 100, doc.y, { width: 400, height: 300 });
+    doc.image(mapImage, 100, doc.y, { width: 400 });
+    fs.unlink(mapImage, () =>{});
     } else {
-      doc.text('Zemljevid ni na voljo (API ključ ni konfiguriran).', { align: 'center' });
+    doc.text('Zemljevid ni na voljo.', { align: 'center' });
     }
 
     //druga stran: Mesečni in tedenski grafi
