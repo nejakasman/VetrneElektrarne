@@ -87,7 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const { ctx, chartArea } = chart;
       const isWeekly = chartType === 'weekly';
       const buttonText = isWeekly ? 'Pojdi na mesečni graf' : 'Pojdi na tedenski graf';
-      const buttonWidth = 150;
+      const buttonWidth = 120;
       const buttonHeight = 20;
       const padding = 8;
 
@@ -245,6 +245,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (windResult.status === "success" && windResult.data.length > 0) {
         windDataCache = windResult.data;
+        const turbines = await ipcRenderer.invoke('turbine-read-all');
+        const selectedTurbine = turbines.find(t => t.name === selectedTurbineName);
+
+        if (!selectedTurbine) {
+          resultsElem.textContent = "Izbrana turbina ni na voljo.";
+          return;
+        }
+
         const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
           windData: windResult.data,
           turbineName: selectedTurbineName,
@@ -253,6 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (energyResult.status === "success") {
           firstTurbineData = {
             name: selectedTurbineName,
+            speeds: selectedTurbine.speeds || [],
+            powers: selectedTurbine.powers || [],
             totalEnergy: energyResult.totalEnergy,
             weeklyEnergy: energyResult.weeklyEnergy,
             monthlyEnergy: energyResult.monthlyEnergy
@@ -262,10 +272,8 @@ document.addEventListener("DOMContentLoaded", () => {
           document.getElementById("result-turbine-name").textContent = selectedTurbineName;
           document.getElementById("result-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
 
-          // Odstranitev nepotrebnih elementov ali preverjanje njihovega obstoja
           const compareNameElem = document.getElementById("result-compare-turbine-name");
           const compareEnergyElem = document.getElementById("result-compare-annual-energy");
-
           if (compareNameElem && compareEnergyElem) {
             compareNameElem.textContent = "Ni izbrano";
             compareEnergyElem.textContent = "Ni izračunano";
@@ -446,32 +454,53 @@ loadCalculationHistory();
 
 // pridobivanje podatkov za PDF
 document.getElementById('generate-pdf-btn').addEventListener('click', async () => {
-  // dialog za shranjevanje PDF
   const { filePath, canceled } = await dialog.showSaveDialog({
     title: 'Shrani PDF poročilo',
     defaultPath: 'porocilo.pdf',
     filters: [{ name: 'PDF', extensions: ['pdf'] }]
   });
 
-  if (canceled || !filePath) return; // user je preklical
+  if (canceled || !filePath) return;
 
   const location = {
     latitude: document.getElementById('latitude').value,
     longitude: document.getElementById('longitude').value
   };
 
-  const turbines = [firstTurbineData]; 
-  const windData = windDataCache;
-  const energyResults = [firstTurbineData]; 
-  if (compareTurbineData) {
-  turbines.push(compareTurbineData);
-  energyResults.push(compareTurbineData);
-}
+  // Pridobivanje speeds in powers samo za prvo turbino
+  let turbines = [];
+  let energyResults = [];
+
+  if (firstTurbineData) {
+    const turbineSpeeds = await ipcRenderer.invoke('turbine-get-speeds', { turbineName: firstTurbineData.name });
+    const speeds = turbineSpeeds.map(row => row.speed);
+    const powers = turbineSpeeds.map(row => row.power);
+
+    turbines = [{
+      name: firstTurbineData.name,
+      speeds: speeds,
+      powers: powers
+    }];
+
+    if (firstTurbineData.totalEnergy && firstTurbineData.weeklyEnergy && firstTurbineData.monthlyEnergy) {
+      energyResults = [{
+        name: firstTurbineData.name,
+        totalEnergy: firstTurbineData.totalEnergy,
+        weeklyEnergy: firstTurbineData.weeklyEnergy,
+        monthlyEnergy: firstTurbineData.monthlyEnergy
+      }];
+    }
+  } else {
+    alert('Podatki za prvo turbino niso na voljo. Prosim, izvedite izračun.');
+    return;
+  }
+
+  console.log('Poslani podatki za PDF:', { location, turbines, windData: windDataCache, energyResults });
 
   const result = await ipcRenderer.invoke('generate-pdf-report', {
     location,
     turbines,
-    windData,
+    windData: windDataCache,
     energyResults,
     filePath
   });
@@ -484,4 +513,3 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
   }
 });
 });
-
