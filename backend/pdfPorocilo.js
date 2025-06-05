@@ -96,15 +96,15 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     doc.addPage({ size: 'A4' });
     doc.rect(0, 0, doc.page.width, 50).fill('#4BC0C0');
     doc.fillColor('white').fontSize(24).font(fs.existsSync(fontBoldPath) ? fontBoldPath : 'Helvetica-Bold').text('Poročilo o potencialu vetrne elektrarne', 50, 20, { align: 'center' });
-
-    doc.fillColor('black').font(fs.existsSync(fontPath) ? fontPath : fallbackFont).fontSize(14).moveDown(2);
-    doc.text('To poročilo prikazuje izračunano letno proizvodnjo električne energije za izbrane turbine na določeni lokaciji.', { align: 'center' });
     doc.moveDown(2);
-    doc.fontSize(12).text(`Lokacija: (${location.latitude}, ${location.longitude})`);
+    doc.fillColor('black').font(fs.existsSync(fontPath) ? fontPath : fallbackFont).fontSize(14).moveDown(2);
+    doc.text('To poročilo prikazuje izračunano letno proizvodnjo električne energije za izbrane turbine na določeni lokaciji.', { align: 'left' });
+    doc.moveDown(2);
+    doc.fontSize(12).text(`Lokacija: ${location.latitude}, ${location.longitude}`);
     doc.moveDown();
     doc.text(`Naslov/ime lokacije: ${await getLocationName(location.latitude, location.longitude)}`);
-    doc.moveDown();
-    doc.text(`Datum: ${new Date().toLocaleString()}`);
+    doc.moveDown(3);
+    doc.text(`Datum: ${new Date().toLocaleString('sl-SI')}`);
     doc.moveDown(2);
 
     
@@ -141,8 +141,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           datasets: [{
             label: `Mesečna proizvodnja (${result.name})`,
             data: result.monthlyEnergy,
-            borderColor: 'rgba(75, 192, 192, 1)',
-            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+            backgroundColor: '#1a3c6d',
             borderWidth: 2,
             fill: true
           }]
@@ -151,7 +150,6 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           responsive: false,
           plugins: { legend: { position: 'top' } },
           scales: {
-            x: { title: { display: true, text: 'Mesec' } },
             y: { title: { display: true, text: 'Energija (kWh)' } }
           }
         }
@@ -164,8 +162,8 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           datasets: [{
             label: `Tedenska proizvodnja (${result.name})`,
             data: result.weeklyEnergy,
-            borderColor: 'rgba(75, 192, 192, 1)',
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            borderColor: '#1a3c6d',
+            backgroundColor: 'rgba(26, 60, 109, 0.2)',
             borderWidth: 2,
             tension: 0.3,
             fill: false
@@ -175,28 +173,24 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           responsive: false,
           plugins: { legend: { position: 'top' } },
           scales: {
-            x: { title: { display: true, text: 'Tedni' } },
             y: { title: { display: true, text: 'Energija (kWh)' } }
           }
         }
       });
 
       const chartWidth = 400;
-      const chartX = 50;
+      const chartX = 100;
       const chartY = doc.y;
 
       doc.image(monthlyChart, chartX, chartY, { width: chartWidth });
-      doc.image(weeklyChart, chartX, chartY + 310, { width: chartWidth });
+      doc.image(weeklyChart, chartX, chartY + 330, { width: chartWidth });
     }
 
     // Tretja stran: Karakteristike turbine
     console.log('Generiranje tretje strani - Stanje turbines:', turbines);
     doc.addPage();
-    doc.rect(0, 0, doc.page.width, 50).fill('#4BC0C0');
-    doc.fillColor('white')
-      .fontSize(18)
-      .font(fs.existsSync(fontBoldPath) ? fontBoldPath : 'Helvetica-Bold')
-      .text('Karakteristike izbrane turbine', 50, 20, { align: 'left' });
+    doc.rect(0, 0, doc.page.width, 50).fill('#D3D3D3');
+    doc.fillColor('black').fontSize(18).font(fs.existsSync(fontBoldPath) ? fontBoldPath : 'Helvetica-Bold').text(`Karakteristike izbrane turbine`, 50, 20, { align: 'left' });
 
     const turbineList = Array.isArray(turbines) ? turbines : [turbines];
     const turbine = turbineList[0] || { name: 'Neznano', speeds: [], powers: [] };
@@ -228,11 +222,11 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       const column1 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(0, half).map(d => [d.speed.toString(), d.power.toString()])];
       const column2 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(half).map(d => [d.speed.toString(), d.power.toString()])];
 
-      const tableX = 50;
+      const tableX = 100;
       const tableY = 90;
       const cellWidth = 80;
-      const cellHeight = 20;
-      const columnGap = 20;
+      const cellHeight = 17;
+      const columnGap = 80;
 
       function drawColumn(doc, data, startX, startY, cellWidth, cellHeight) {
         data.forEach((row, rowIndex) => {
@@ -255,8 +249,8 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       const availableHeight = doc.page.height - graphY - 50;
       const maxGraphWidth = doc.page.width - 2 * tableX;
 
-      const graphWidth = Math.min(300, maxGraphWidth);
-      const graphHeight = Math.min(availableHeight, 300); // naj bo višina do max 300
+      const graphWidth = Math.min(400, maxGraphWidth);
+      const graphHeight = Math.min(availableHeight, 350); // naj bo višina min 350
 
       const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: graphWidth, height: graphHeight });
 
