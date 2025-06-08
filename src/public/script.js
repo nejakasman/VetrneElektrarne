@@ -273,7 +273,8 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
       // Posodobitev prikaza
       document.getElementById("result-turbine-name").textContent = selectedTurbineName;
-      document.getElementById("result-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
+      document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000).toFixed(2);
+
 
       const compareNameElem = document.getElementById("result-compare-turbine-name");
       const compareEnergyElem = document.getElementById("result-compare-annual-energy");
@@ -400,7 +401,8 @@ function renderComparedTurbinesList() {
     container.className = "d-flex justify-content-between align-items-center mb-2";
 
     const info = document.createElement("div");
-    info.innerHTML = `<strong>${turbine.name}</strong>: ${turbine.weeklyEnergy.reduce((a, b) => a + b, 0).toFixed(2)} kWh`;
+    const totalMWh = turbine.weeklyEnergy.reduce((a, b) => a + b, 0) / 1000;
+info.innerHTML = `<strong>${turbine.name}</strong>: ${totalMWh.toFixed(2)} MWh`;
 
     const removeBtn = document.createElement("button");
     removeBtn.className = "btn btn-sm btn-danger";
@@ -443,7 +445,7 @@ loadHistoryBtn.addEventListener("click", () => {
 
   // posodobitev v sidebaru
   document.getElementById("result-turbine-name").textContent = item.turbine_name;
-  document.getElementById("result-annual-energy").textContent = Number(item.letna_energija).toFixed(2);
+  document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000).toFixed(2);
 
   // Pinpoint na zameljevidu
   if (window.currentMarker) {

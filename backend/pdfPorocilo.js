@@ -287,7 +287,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       doc.fontSize(12).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
         .text(`Spodnji grafi prikazujejo mesečno in tedensko proizvodnjo električne energije za turbino ${result.name}.`, 40, 110, { width: doc.page.width - 80 });
       doc.moveDown();
-      doc.text(`Letna proizvodnja: ${result.totalEnergy.toFixed(2)} kWh`, 40, doc.y);
+      doc.text(`Letna proizvodnja: ${(result.totalEnergy / 1000).toFixed(2)} MWh`, 40, doc.y);
 
       const monthlyChart = await chartJSNodeCanvas.renderToBuffer({
         type: 'bar',
