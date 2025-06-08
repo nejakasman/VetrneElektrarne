@@ -46,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const { ipcRenderer } = require('electron');
   const turbineDropdown = document.getElementById("turbine-type");
   const compareTurbineDropdown = document.getElementById("compare-turbine-type");
-  const resultsElem = document.getElementById("results");
   const resultSidebar = document.getElementById("result-sidebar");
   const toggleBtn = document.getElementById("toggle-result-sidebar");
   const historyList = document.getElementById("history-list");
@@ -223,92 +222,99 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   //izračun prve turbine
-  document.getElementById("calculate-energy").addEventListener("click", async (event) => {
-    event.preventDefault();
-    const comparisonSection = document.getElementById('comparison-section');
-    comparisonSection.style.display = 'block';
+document.getElementById("calculate-energy").addEventListener("click", async (event) => {
+  event.preventDefault();
 
-    const lat = parseFloat(document.getElementById("latitude").value);
-    const lon = parseFloat(document.getElementById("longitude").value);
-    const selectedTurbineName = turbineDropdown.value;
+  const lat = parseFloat(document.getElementById("latitude").value);
+  const lon = parseFloat(document.getElementById("longitude").value);
+  const selectedTurbineName = turbineDropdown.value;
 
-    if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      resultsElem.textContent = "Prosim, vnesite veljavne koordinate.";
-      return;
-    }
+  if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    showAlert("Prosim, vnesite veljavne koordinate.");
+    return;
+  }
 
-    if (!selectedTurbineName) {
-      resultsElem.textContent = "Prosim, izberite turbino.";
-      return;
-    }
+  if (!selectedTurbineName) {
+    showAlert("Prosim, izberite turbino.");
+    return;
+  }
 
-    try {
-      const windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon });
 
-      if (windResult.status === "success" && windResult.data.length > 0) {
-        windDataCache = windResult.data;
-        const turbines = await ipcRenderer.invoke('turbine-read-all');
-        const selectedTurbine = turbines.find(t => t.name === selectedTurbineName);
+  try {
+    showLoading();
+    const windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon });
 
-        if (!selectedTurbine) {
-          resultsElem.textContent = "Izbrana turbina ni na voljo.";
-          return;
-        }
+    if (windResult.status === "success" && windResult.data.length > 0) {
+      windDataCache = windResult.data;
+      const turbines = await ipcRenderer.invoke('turbine-read-all');
+      const selectedTurbine = turbines.find(t => t.name === selectedTurbineName);
 
-        const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
-          windData: windResult.data,
-          turbineName: selectedTurbineName,
-        });
-
-        if (energyResult.status === "success") {
-          firstTurbineData = {
-            name: selectedTurbineName,
-            speeds: selectedTurbine.speeds || [],
-            powers: selectedTurbine.powers || [],
-            totalEnergy: energyResult.totalEnergy,
-            weeklyEnergy: energyResult.weeklyEnergy,
-            monthlyEnergy: energyResult.monthlyEnergy
-          };
-
-          // Posodobitev prikaza
-          document.getElementById("result-turbine-name").textContent = selectedTurbineName;
-          document.getElementById("result-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
-
-          const compareNameElem = document.getElementById("result-compare-turbine-name");
-          const compareEnergyElem = document.getElementById("result-compare-annual-energy");
-          if (compareNameElem && compareEnergyElem) {
-            compareNameElem.textContent = "Ni izbrano";
-            compareEnergyElem.textContent = "Ni izračunano";
-          }
-
-          document.getElementById("result-sidebar").style.display = "block";
-          resultSidebar.classList.remove("collapsed");
-          resultSidebar.classList.add("expanded");
-          toggleBtn.textContent = "⮞ ⮜";
-
-          compareTurbineData = null;
-
-          const energyData = chartType === 'weekly' ? energyResult.weeklyEnergy : energyResult.monthlyEnergy;
-          updateChart(energyData, selectedTurbineName);
-
-          await ipcRenderer.invoke("save-calculation-history", {
-            latitude: lat,
-            longitude: lon,
-            turbineName: selectedTurbineName,
-            annualEnergy: energyResult.totalEnergy,
-            weeklyEnergy: energyResult.weeklyEnergy,
-            monthlyEnergy: energyResult.monthlyEnergy
-          });
-        } else {
-          resultsElem.textContent = `Napaka pri izračunu energije: ${energyResult.message}`;
-        }
-      } else {
-        resultsElem.textContent = "Ni vetrovnih podatkov za to lokacijo.";
+      if (!selectedTurbine) {
+        hideLoading();
+        showAlert("Izbrana turbina ni na voljo.");
+        return;
       }
-    } catch (error) {
-      console.error("Napaka:", error);
-      resultsElem.textContent = `Napaka: ${error.message}`;
+
+      const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
+        windData: windResult.data,
+        turbineName: selectedTurbineName,
+      });
+
+      hideLoading();
+      if (energyResult.status === "success") {
+        firstTurbineData = {
+          name: selectedTurbineName,
+          speeds: selectedTurbine.speeds || [],
+          powers: selectedTurbine.powers || [],
+          totalEnergy: energyResult.totalEnergy,
+          weeklyEnergy: energyResult.weeklyEnergy,
+          monthlyEnergy: energyResult.monthlyEnergy
+      };
+
+      // Posodobitev prikaza
+      document.getElementById("result-turbine-name").textContent = selectedTurbineName;
+      document.getElementById("result-annual-energy").textContent = energyResult.totalEnergy.toFixed(2);
+
+      const compareNameElem = document.getElementById("result-compare-turbine-name");
+      const compareEnergyElem = document.getElementById("result-compare-annual-energy");
+      if (compareNameElem && compareEnergyElem) {
+        compareNameElem.textContent = "Ni izbrano";
+        compareEnergyElem.textContent = "Ni izračunano";
+      }
+
+      document.getElementById("result-sidebar").style.display = "block";
+      resultSidebar.classList.remove("collapsed");
+      resultSidebar.classList.add("expanded");
+      toggleBtn.textContent = "⮞ ⮜";
+
+      compareTurbineData = null;
+
+      const energyData = chartType === 'weekly' ? energyResult.weeklyEnergy : energyResult.monthlyEnergy;
+      updateChart(energyData, selectedTurbineName);
+
+      await ipcRenderer.invoke("save-calculation-history", {
+        latitude: lat,
+        longitude: lon,
+        turbineName: selectedTurbineName,
+        annualEnergy: energyResult.totalEnergy,
+        weeklyEnergy: energyResult.weeklyEnergy,
+        monthlyEnergy: energyResult.monthlyEnergy
+      });
+
+      const comparisonSection = document.getElementById('comparison-section');
+      comparisonSection.style.display = 'block';
+    } else {
+      showAlert(`Napaka pri izračunu energije: ${energyResult.message}`);
     }
+    } else {
+      showAlert("Ni vetrovnih podatkov za to lokacijo. Poskusite z drugo lokacijo ali preverite povezavo.");
+    }
+  } catch (error) {
+    console.error("Napaka:", error);
+    showAlert(`Napaka: ${error.message}`);
+  } finally {
+    hideLoading();
+  }
 });
 
     //primerjava z drugimi turbinami
@@ -316,17 +322,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const compareTurbineName = document.getElementById("compare-turbine-type").value;
 
   if (!compareTurbineName) {
-    resultsElem.textContent = "Prosim, izberite turbino za primerjavo.";
+    showAlert("Prosim, izberite turbino za primerjavo.");
     return;
   }
 
   if (!windDataCache) {
-    resultsElem.textContent = "Ni vetrovnih podatkov za primerjavo.";
+    showAlert("Ni vetrovnih podatkov za primerjavo.");
     return;
   }
 
   if (comparedTurbines.some(t => t.name === compareTurbineName)) {
-    resultsElem.textContent = "Ta turbina je že na grafu.";
+    showAlert("Ta turbina je že na grafu.");
     return;
   }
 
@@ -349,11 +355,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       renderComparedTurbinesList();
     } else {
-      resultsElem.textContent = `Napaka pri izračunu energije za primerjavo: ${energyResult.message}`;
+      showAlert(`Napaka pri izračunu energije za primerjavo: ${energyResult.message}`);
     }
   } catch (error) {
     console.error("Napaka pri primerjavi:", error);
-    resultsElem.textContent = `Napaka: ${error.message}`;
+    showAlert(`Napaka: ${error.message}`);
   }
 });
 
@@ -515,3 +521,27 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
   }
 });
 });
+
+//alert okno
+function showAlert(message) {
+  const modal = document.getElementById('simpleModal');
+  const messageElement = document.getElementById('simpleModalMessage');
+  const okBtn = document.getElementById('simpleModalOkBtn');
+
+  messageElement.textContent = message;
+  modal.style.display = 'flex';
+
+  okBtn.onclick = () => {
+    modal.style.display = 'none';
+  };
+}
+
+function showLoading() {
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  loadingIndicator.style.display = 'block';
+}
+
+function hideLoading() {
+  const loadingIndicator = document.getElementById('loadingIndicator');
+  loadingIndicator.style.display = 'none';
+}

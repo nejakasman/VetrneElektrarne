@@ -4,26 +4,30 @@ function getTurbinePower(windSpeed, turbineData) {
   const { speeds, powers } = turbineData;
 
   //preveri če je hitrost med najnižjo in najvišjo vrednostjo
-  const minSpeed = speeds[0];
-  const maxSpeed = speeds[speeds.length - 1];
+  const minSpeed = parseFloat(speeds[0]);
+  const maxSpeed = parseFloat(speeds[speeds.length - 1]);
 
   if (windSpeed < minSpeed || windSpeed > maxSpeed) {
     return 0;
   }
 
-  let closestIndex = 0;
-  let smallestDifference = Math.abs(windSpeed - speeds[0]);
+  //interval, kjer se hitrost nahaja
+  for (let i = 0; i < speeds.length - 1; i++) {
+    const lowerSpeed = parseFloat(speeds[i]);
+    const upperSpeed = parseFloat(speeds[i + 1]);
+    const lowerPower = parseFloat(powers[i]);
+    const upperPower = parseFloat(powers[i + 1]);
 
-  for (let i = 1; i < speeds.length; i++) {
-    const difference = Math.abs(windSpeed - speeds[i]);
-    if (difference < smallestDifference) {
-      closestIndex = i;
-      smallestDifference = difference;
+    if (windSpeed >= lowerSpeed && windSpeed <= upperSpeed) {
+      //interpolacija
+      const ratio = (windSpeed - lowerSpeed) / (upperSpeed - lowerSpeed);
+      return lowerPower + ratio * (upperPower - lowerPower);
     }
   }
 
-  return powers[closestIndex];
+  return 0; 
 }
+
 
 
 const calculateAnnualEnergy = (windData, turbineData) => {
