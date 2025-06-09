@@ -287,7 +287,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       doc.fontSize(12).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
         .text(`Spodnji grafi prikazujejo mesečno in tedensko proizvodnjo električne energije za turbino ${result.name}.`, 40, 110, { width: doc.page.width - 80 });
       doc.moveDown();
-      doc.text(`Letna proizvodnja: ${(result.totalEnergy / 1000).toFixed(2)} MWh`, 40, doc.y);
+      doc.text(`Letna proizvodnja: ${(result.totalEnergy / 1000000).toFixed(2)} MWh`, 40, doc.y);
 
       const monthlyChart = await chartJSNodeCanvas.renderToBuffer({
         type: 'bar',
@@ -308,7 +308,14 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
             x: {
               ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10, family: 'Roboto' } }
             },
-            y: { title: { display: true, text: 'Energija (kWh)', font: { size: 12, family: 'Roboto' } } }
+            y: { title: { display: true, text: 'Energija (kWh)', font: { size: 12, family: 'Roboto' } },
+                  ticks: {
+                    callback: function(value) {
+                      return (value / 1000);
+                    }
+                  }
+                }
+
           }
         }
       });
@@ -335,7 +342,13 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           plugins: { legend: { position: 'top', labels: { font: { size: 12, family: 'Roboto' } } } },
           scales: {
             x: { ticks: { font: { size: 10, family: 'Roboto' } } },
-            y: { title: { display: true, text: 'Energija (kWh)', font: { size: 12, family: 'Roboto' } } }
+            y: { title: { display: true, text: 'Energija (kWh)', font: { size: 12, family: 'Roboto' } },
+                  ticks: {
+                    callback: function(value) {
+                      return (value / 1000);
+                    }
+                  }
+                }
           }
         }
       });
@@ -368,8 +381,8 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       const sortedPowers = turbineData.map(d => d.power);
 
       const half = Math.ceil(turbineData.length / 2);
-      const column1 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(0, half).map(d => [d.speed.toString(), d.power.toString()])];
-      const column2 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(half).map(d => [d.speed.toString(), d.power.toString()])];
+      const column1 = [['Hitrost (m/s)', 'Moč (W)'], ...turbineData.slice(0, half).map(d => [d.speed.toString(), d.power.toString()])];
+      const column2 = [['Hitrost (m/s)', 'Moč (W)'], ...turbineData.slice(half).map(d => [d.speed.toString(), d.power.toString()])];
 
       const tableX = 100;
       const tableY = doc.y + 20;
@@ -420,7 +433,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           plugins: { legend: { position: 'top', labels: { font: { size: 12, family: 'Roboto' } } } },
           scales: {
             x: { title: { display: true, text: 'Hitrost vetra (m/s)', font: { size: 12, family: 'Roboto' } } },
-            y: { title: { display: true, text: 'Moč (kW)', font: { size: 12, family: 'Roboto' } } }
+            y: { title: { display: true, text: 'Moč (W)', font: { size: 12, family: 'Roboto' } } }
           }
         }
       });

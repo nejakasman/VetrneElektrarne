@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const bgColor = `hsla(${adjustedHue}, 100%, ${adjustedLightness}%, 0.2)`;
 
       return {
-        label: `${chartType === 'weekly' ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbine.name}) (kWh)`,
+        label: `${chartType === 'weekly' ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbine.name})`,
         data: chartType === 'weekly' ? turbine.weeklyEnergy : turbine.monthlyEnergy,
         borderColor: color,
         backgroundColor: bgColor,
@@ -162,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (energyData2 && turbineName2) {
     datasets.push({
-      label: `${isWeekly ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbineName2}) (kWh)`,
+      label: `${isWeekly ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbineName2})`,
       data: energyData2,
       borderColor: 'rgba(255, 99, 132, 1)',
       backgroundColor: 'rgba(255, 99, 132, 0.6)',
@@ -192,6 +192,11 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         y: {
           title: { display: true, text: 'Energija (kWh)' },
+          ticks: {
+            callback: function(value) {
+              return (value / 1000); 
+            }
+          }
         },
       },
     },
@@ -273,7 +278,7 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
       // Posodobitev prikaza
       document.getElementById("result-turbine-name").textContent = selectedTurbineName;
-      document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000).toFixed(2);
+      document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000000).toFixed(2);
 
 
       const compareNameElem = document.getElementById("result-compare-turbine-name");
@@ -401,7 +406,7 @@ function renderComparedTurbinesList() {
     container.className = "d-flex justify-content-between align-items-center mb-2";
 
     const info = document.createElement("div");
-    const totalMWh = turbine.weeklyEnergy.reduce((a, b) => a + b, 0) / 1000;
+    const totalMWh = turbine.weeklyEnergy.reduce((a, b) => a + b, 0) / 1000000;
 info.innerHTML = `<strong>${turbine.name}</strong>: ${totalMWh.toFixed(2)} MWh`;
 
     const removeBtn = document.createElement("button");
@@ -445,7 +450,7 @@ loadHistoryBtn.addEventListener("click", () => {
 
   // posodobitev v sidebaru
   document.getElementById("result-turbine-name").textContent = item.turbine_name;
-  document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000).toFixed(2);
+  document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000000).toFixed(2);
 
   // Pinpoint na zameljevidu
   if (window.currentMarker) {
