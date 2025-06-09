@@ -446,8 +446,6 @@ async function loadCalculationHistory() {
      });
 
      option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${localTimeString}`;
-
-     console.log("Shranjeni datum:", item.datum, "-> Lokalni čas:", localTimeString);
      option.dataset.data = JSON.stringify(item);
      historyList.appendChild(option);
    });
