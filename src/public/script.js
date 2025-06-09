@@ -1,5 +1,5 @@
 const { ipcRenderer, remote } = require('electron');
-const { dialog } = require('@electron/remote');
+const { dialog, BrowserWindow } = require('@electron/remote');
 //Leaflet inicializacija
 const map = L.map('map').setView([46.05, 14.5], 8);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -35,12 +35,15 @@ map.on('click', function (e) {
   document.getElementById("sidebar").style.transform = "translateX(0)";
 });
 
-// Sidebar
+// Sidebar toggle
 document.getElementById("toggleForm").addEventListener("click", () => {
-  document.getElementById("sidebar").style.transform = "translateX(0)";
+  const sidebar = document.getElementById("sidebar");
+if (sidebar.style.transform.includes("translateX(0")) {
+  sidebar.style.transform = "translateX(-100%)";
+} else {
+  sidebar.style.transform = "translateX(0)";
+}
 });
-
-
 
 document.addEventListener("DOMContentLoaded", () => {
   const { ipcRenderer } = require('electron');
@@ -188,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       scales: {
         x: {
-          title: { display: true, text: isWeekly ? 'Tedni' : 'Meseci' },
+          title: { display: true, text: isWeekly ? '' : 'Meseci' },
         },
         y: {
           title: { display: true, text: 'Energija (MWh)' },
@@ -396,15 +399,16 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 function renderComparedTurbinesList() {
   const listContainer = document.getElementById("compared-turbines-list");
   listContainer.innerHTML = "";
-
+  listContainer.innerHTML ='<h6>Turbine za primerjavo:</h6>'
   if (comparedTurbines.length === 0) {
-    listContainer.innerHTML = '<div class="text-muted">Ni izbrano</div>';
+    listContainer.innerHTML = '<h6>Turbine za primerjavo:</h6><div class="text-muted">Ni izbrano</div>';
     return;
   }
 
   comparedTurbines.forEach((turbine, index) => {
     const container = document.createElement("div");
-    container.className = "d-flex justify-content-between align-items-center mb-2";
+    container.className = "d-flex justify-content-center align-items-center mb-2";
+   
 
     const info = document.createElement("div");
     const totalMWh = turbine.weeklyEnergy.reduce((a, b) => a + b, 0) / 1000000;
@@ -419,7 +423,7 @@ info.innerHTML = `<strong>${turbine.name}</strong>: ${totalMWh.toFixed(2)} GWh`;
       updateChart(energyData, firstTurbineData.name);
       renderComparedTurbinesList();
     });
-
+ info.style.marginRight = "2rem";
     container.appendChild(info);
     container.appendChild(removeBtn);
     listContainer.appendChild(container);
@@ -528,11 +532,9 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
       }];
     }
   } else {
-    alert('Podatki za prvo turbino niso na voljo. Prosim, izvedite izračun.');
+   alert('Podatki za prvo turbino niso na voljo. Prosim, izvedite izračun.');
     return;
   }
-
-  console.log('Poslani podatki za PDF:', { location, turbines, windData: windDataCache, energyResults });
 
   const result = await ipcRenderer.invoke('generate-pdf-report', {
     location,
@@ -543,10 +545,10 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
   });
 
   if (result.status === 'success') {
-    alert('PDF poročilo je bilo ustvarjeno: ' + result.filePath);
+   alert('PDF poročilo je bilo ustvarjeno: ' + result.filePath);
     require('electron').shell.openPath(result.filePath);
   } else {
-    alert('Napaka pri generiranju PDF: ' + result.message);
+   alert('Napaka pri generiranju PDF: ' + result.message);
   }
 });
 });
