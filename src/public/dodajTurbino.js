@@ -107,7 +107,13 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             scales: {
               x: { title: { display: true, text: 'Hitrost vetra (m/s)', color: '#1a3c6d' }},
-              y: { title: { display: true, text: 'Moč (kW)', color: '#1a3c6d' }},
+              y: { title: { display: true, text: 'Moč (kW)', color: '#1a3c6d' },
+                    ticks: {
+                      callback: function(value) {
+                        return value.toString().replace(',', '.'); 
+                      }
+                    }
+                  },
             }
           }
         });

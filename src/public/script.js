@@ -457,6 +457,11 @@ loadHistoryBtn.addEventListener("click", () => {
   const selectedOption = historyList.options[historyList.selectedIndex];
   const item = JSON.parse(selectedOption.dataset.data);
 
+  if (!item.latitude || !item.longitude || isNaN(item.latitude) || isNaN(item.longitude)) {
+    showAlert("Neveljavne koordinate v zgodovini.");
+    return;
+  }
+
   // posodobitev grafa
   updateChart(JSON.parse(item.tedenska_energija), item.turbine_name);
 
@@ -467,17 +472,20 @@ loadHistoryBtn.addEventListener("click", () => {
   document.getElementById("result-annual-energy").textContent = (totalEnergy / 1000000).toFixed(2);
 
   // Pinpoint na zameljevidu
-  if (window.currentMarker) {
-    map.removeLayer(window.currentMarker);
+  if (currentMarker) {
+    map.removeLayer(currentMarker);
   }
-  window.currentMarker = L.marker([item.latitude, item.longitude], { icon: windTurbineIcon }).addTo(map).bindPopup("Prejšnja izračunana lokacija").openPopup();
+  currentMarker = L.marker([item.latitude, item.longitude], { icon: windTurbineIcon })
+    .addTo(map)
+    .bindPopup("Prejšnja izračunana lokacija")
+    .openPopup();
   map.setView([item.latitude, item.longitude], 10);
-  // opcijski prikaz rezultatov v side-baru
+
   document.getElementById("result-sidebar").style.display = "block";
   resultSidebar.classList.remove("collapsed");
   resultSidebar.classList.add("expanded");
   toggleBtn.textContent = "⮞ ⮜";
-})
+});
 
 loadCalculationHistory();
 

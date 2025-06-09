@@ -440,7 +440,13 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           plugins: { legend: { position: 'top', labels: { font: { size: 12, family: 'Roboto' } } } },
           scales: {
             x: { title: { display: true, text: 'Hitrost vetra (m/s)', font: { size: 12, family: 'Roboto' } } },
-            y: { title: { display: true, text: 'Moč (kW)', font: { size: 12, family: 'Roboto' } } }
+            y: { title: { display: true, text: 'Moč (kW)', font: { size: 12, family: 'Roboto' } },
+                  ticks: {
+                    callback: function(value) {
+                      return value.toString().replace(',', '.');
+                    }
+                  }
+                }
           }
         }
       });
