@@ -191,15 +191,20 @@ ipcMain.handle('save-calculation-history', async (event, { latitude, longitude, 
 
 
     await new Promise((resolve, reject) => {
+      const now = new Date();
+      const isoDate = now.toISOString(); 
       db.run(
-        "INSERT INTO Zgodovina_Izracunov (lokacija_id, turbine_id, letna_energija, tedenska_energija) VALUES (?, ?, ?, ?)",
-        [lokacijaId, turbineId, annualEnergy, JSON.stringify(weeklyEnergy)],
+        `INSERT INTO Zgodovina_Izracunov
+         (lokacija_id, turbine_id, letna_energija, tedenska_energija, datum)
+         VALUES (?, ?, ?, ?, ?)`,
+        [lokacijaId, turbineId, annualEnergy, JSON.stringify(weeklyEnergy), isoDate],
         function(err) {
           if (err) reject(err);
           else resolve();
         }
       );
-    });
+      });
+
 
     return { status: "success" };
   } catch (err) {

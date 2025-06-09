@@ -306,6 +306,7 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
         weeklyEnergy: energyResult.weeklyEnergy,
         monthlyEnergy: energyResult.monthlyEnergy
       });
+      await loadCalculationHistory();
 
       const comparisonSection = document.getElementById('comparison-section');
       comparisonSection.style.display = 'block';
@@ -427,15 +428,26 @@ info.innerHTML = `<strong>${turbine.name}</strong>: ${totalMWh.toFixed(2)} GWh`;
 
 // fetch + populate dropdown z zgodovino
 async function loadCalculationHistory() {
-const history = await ipcRenderer.invoke('get-calculation-history');
-historyList.innerHTML = '<option value="">Izberi prejšnji izračun...</option>';
-history.forEach(item => {
-  const option = document.createElement('option');
-  option.value = item.id;
-  option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${new Date(item.datum).toLocaleString()}`;
-  option.dataset.data = JSON.stringify(item);
-  historyList.appendChild(option);
-});
+  const history = await ipcRenderer.invoke('get-calculation-history');
+   historyList.innerHTML = '<option value="">Izberi prejšnji izračun...</option>';
+
+   history.forEach(item => {
+     const option = document.createElement('option');
+     option.value = item.id;
+
+     const dateObj = new Date(item.datum);
+
+     const localTimeString = dateObj.toLocaleString('sl-SI', {
+       timeZone: 'Europe/Ljubljana'
+     });
+
+     option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${localTimeString}`;
+
+     console.log("Shranjeni datum:", item.datum, "-> Lokalni čas:", localTimeString);
+     option.dataset.data = JSON.stringify(item);
+     historyList.appendChild(option);
+   });
+
 }
 
 loadHistoryBtn.addEventListener("click", () => {
@@ -450,7 +462,9 @@ loadHistoryBtn.addEventListener("click", () => {
 
   // posodobitev v sidebaru
   document.getElementById("result-turbine-name").textContent = item.turbine_name;
-  document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000000).toFixed(2);
+  const tedenskaEnergija = JSON.parse(item.tedenska_energija);
+  const totalEnergy = tedenskaEnergija.reduce((sum, val) => sum + val, 0);
+  document.getElementById("result-annual-energy").textContent = (totalEnergy / 1000000).toFixed(2);
 
   // Pinpoint na zameljevidu
   if (window.currentMarker) {
