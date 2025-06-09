@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const datasets = [
     {
-      label: `${isWeekly ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbineName1}) (kWh)`,
+      label: `${isWeekly ? 'Tedenska' : 'Mesečna'} proizvodnja (${turbineName1})`,
       data: energyData1,
       borderColor: 'rgba(75, 192, 192, 1)',
       backgroundColor: 'rgba(75, 192, 192, 0.6)',
@@ -191,10 +191,10 @@ document.addEventListener("DOMContentLoaded", () => {
           title: { display: true, text: isWeekly ? 'Tedni' : 'Meseci' },
         },
         y: {
-          title: { display: true, text: 'Energija (kWh)' },
+          title: { display: true, text: 'Energija (MWh)' },
           ticks: {
             callback: function(value) {
-              return (value / 1000); 
+              return (value / 1000);
             }
           }
         },
@@ -407,7 +407,7 @@ function renderComparedTurbinesList() {
 
     const info = document.createElement("div");
     const totalMWh = turbine.weeklyEnergy.reduce((a, b) => a + b, 0) / 1000000;
-info.innerHTML = `<strong>${turbine.name}</strong>: ${totalMWh.toFixed(2)} MWh`;
+info.innerHTML = `<strong>${turbine.name}</strong>: ${totalMWh.toFixed(2)} GWh`;
 
     const removeBtn = document.createElement("button");
     removeBtn.className = "btn btn-sm btn-danger";

@@ -19,7 +19,6 @@ async function getLocationName(lat, lon) {
 }
 
 //pridobivanje statične slike zemljevida za PDF
-
 async function getLeafletMapImage(lat, lon) {
   const mapPath = path.join(__dirname, 'map.png');
   const html = `
@@ -121,11 +120,16 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     doc.fontSize(16).font('Roboto')
       .text(`Lokacija: ${await getLocationName(location.latitude, location.longitude)}`, 40, 200, { align: 'center' });
     doc.fontSize(14).text(`Datum: ${new Date().toLocaleString('sl-SI')}`, 40, 240, { align: 'center' });
+    doc.fontSize(12).font('Roboto')
+      .text('Namen tega projekta je razvoj spletnega kalkulatorja za preliminarno ocenitev letne proizvodnje vetrnih elektrarn na izbranih lokacijah. Orodje omogoča analizo vetrnega potenciala z uporabo spletno dostopnih podatkov o hitrosti vetra ter močnostnih karakteristik različnih tipov vetrnih turbin. Uporabniku ponuja možnost izbire geografskih točk in optimizacije umeščanja turbin v prostor, s čimer podpira odločanje pri določanju najustreznejših mikrolokacij za maksimiranje energetskega izplena.', 40, 280, { align: 'left', width: doc.page.width - 80 });
+    doc.moveDown();
+    doc.text('To poročilo podrobno opisuje funkcionalnosti razvitega orodja, vključno z analizo lokacije, hitrosti vetra, proizvodnje energije in karakteristik izbranih turbin. Predstavljeni rezultati in vizualizacije so zasnovani tako, da nudijo celovit vpogled v potencial vetrnih elektrarn na izbranih stojiščih.', 40, doc.y, { align: 'left', width: doc.page.width - 80 });
     doc.fontSize(12).text('Pripravil: ', 40, doc.page.height - 100, { align: 'center' });
 
     //kazalo
     doc.addPage({ size: 'A4' });
     doc.fillColor('black').fontSize(20).font('Roboto-Bold').text('Kazalo', 40, 80);
+    doc.moveTo(40, 100).lineTo(doc.page.width - 40, 100).lineWidth(1).stroke('#000000');
     doc.fontSize(12).font('Roboto');
     const contents = [
       { title: '1. Pregled lokacije', page: 3 },
@@ -142,6 +146,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     doc.addPage({ size: 'A4' });
     doc.fillColor('black').fontSize(16).font(fs.existsSync(fontBoldPath) ? 'Roboto-Bold' : 'Helvetica-Bold')
       .text('Pregled lokacije', 40, 80);
+    doc.moveTo(40, 100).lineTo(doc.page.width - 40, 100).lineWidth(1).stroke('#000000');
     doc.fontSize(12).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
       .text('To poročilo analizira potencial za proizvodnjo električne energije iz vetrnih turbin na izbrani lokaciji.', 40, 110, { width: doc.page.width - 80 });
     doc.moveDown();
@@ -167,6 +172,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     doc.addPage();
     doc.fillColor('black').fontSize(16).font(fs.existsSync(fontBoldPath) ? 'Roboto-Bold' : 'Helvetica-Bold')
       .text('Analiza hitrosti vetra', 40, 80);
+    doc.moveTo(40, 100).lineTo(doc.page.width - 40, 100).lineWidth(1).stroke('#000000');
     doc.fontSize(12).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
       .text('Spodnja tabela in graf prikazujeta povprečne, maksimalne in minimalne mesečne vrednosti hitrosti vetra na višini 100 metrov.', 40, 110, { width: doc.page.width - 80 });
 
@@ -284,10 +290,11 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       doc.addPage();
       doc.fillColor('black').fontSize(16).font(fs.existsSync(fontBoldPath) ? 'Roboto-Bold' : 'Helvetica-Bold')
         .text(`Energijska proizvodnja za ${result.name}`, 40, 80);
+      doc.moveTo(40, 100).lineTo(doc.page.width - 40, 100).lineWidth(1).stroke('#000000');
       doc.fontSize(12).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
         .text(`Spodnji grafi prikazujejo mesečno in tedensko proizvodnjo električne energije za turbino ${result.name}.`, 40, 110, { width: doc.page.width - 80 });
       doc.moveDown();
-      doc.text(`Letna proizvodnja: ${(result.totalEnergy / 1000000).toFixed(2)} MWh`, 40, doc.y);
+      doc.text(`Letna proizvodnja: ${(result.totalEnergy / 1000000).toFixed(2)} GWh`, 40, doc.y);
 
       const monthlyChart = await chartJSNodeCanvas.renderToBuffer({
         type: 'bar',
@@ -308,14 +315,13 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
             x: {
               ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10, family: 'Roboto' } }
             },
-            y: { title: { display: true, text: 'Energija (kWh)', font: { size: 12, family: 'Roboto' } },
+            y: { title: { display: true, text: 'Energija (MWh)', font: { size: 12, family: 'Roboto' } },
                   ticks: {
                     callback: function(value) {
                       return (value / 1000);
                     }
                   }
                 }
-
           }
         }
       });
@@ -342,7 +348,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           plugins: { legend: { position: 'top', labels: { font: { size: 12, family: 'Roboto' } } } },
           scales: {
             x: { ticks: { font: { size: 10, family: 'Roboto' } } },
-            y: { title: { display: true, text: 'Energija (kWh)', font: { size: 12, family: 'Roboto' } },
+            y: { title: { display: true, text: 'Energija (MWh)', font: { size: 12, family: 'Roboto' } },
                   ticks: {
                     callback: function(value) {
                       return (value / 1000);
@@ -361,6 +367,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     doc.addPage();
     doc.fillColor('black').fontSize(16).font(fs.existsSync(fontBoldPath) ? 'Roboto-Bold' : 'Helvetica-Bold')
       .text('Karakteristike izbrane turbine', 40, 80);
+    doc.moveTo(40, 100).lineTo(doc.page.width - 40, 100).lineWidth(1).stroke('#000000');
     doc.fontSize(12).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
       .text('Spodnja tabela in graf prikazujeta moč turbine v odvisnosti od hitrosti vetra.', 40, 110, { width: doc.page.width - 80 });
 
@@ -381,8 +388,8 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       const sortedPowers = turbineData.map(d => d.power);
 
       const half = Math.ceil(turbineData.length / 2);
-      const column1 = [['Hitrost (m/s)', 'Moč (W)'], ...turbineData.slice(0, half).map(d => [d.speed.toString(), d.power.toString()])];
-      const column2 = [['Hitrost (m/s)', 'Moč (W)'], ...turbineData.slice(half).map(d => [d.speed.toString(), d.power.toString()])];
+      const column1 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(0, half).map(d => [d.speed.toString(), d.power.toString()])];
+      const column2 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(half).map(d => [d.speed.toString(), d.power.toString()])];
 
       const tableX = 100;
       const tableY = doc.y + 20;
@@ -433,7 +440,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           plugins: { legend: { position: 'top', labels: { font: { size: 12, family: 'Roboto' } } } },
           scales: {
             x: { title: { display: true, text: 'Hitrost vetra (m/s)', font: { size: 12, family: 'Roboto' } } },
-            y: { title: { display: true, text: 'Moč (W)', font: { size: 12, family: 'Roboto' } } }
+            y: { title: { display: true, text: 'Moč (kW)', font: { size: 12, family: 'Roboto' } } }
           }
         }
       });
