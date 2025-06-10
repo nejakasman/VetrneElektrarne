@@ -111,10 +111,9 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       console.warn('Pisave Roboto niso najdene, uporaba privzete pisave Helvetica.');
       doc.font(fallbackFont);
     }
-
     //Prva stran: naslov, uvod, podatki o lokaciji in zemljevid
     doc.addPage({ size: 'A4' });
-    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#F5F5F5');
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill('white');
     doc.fillColor('#2E2E2E').fontSize(24).font('Roboto-Bold')
       .text('Poročilo o potencialu vetrne elektrarne', 40, 70, { align: 'center', width: doc.page.width - 80 });
       doc.moveTo(40, 100).lineTo(doc.page.width - 40, 100).lineWidth(1).stroke('#000000');
@@ -173,29 +172,55 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
 
     //tabela povprečne, maksimalne in minimalne hitrosti vetra
     function drawWindTable(doc, data, startX, startY, cellWidth, headerHeight, rowHeight) {
+
+      // Calculate table dimensions
+   const tableWidth = data[0].length * cellWidth;
+   const tableHeight = headerHeight + (data.length - 1) * rowHeight;
+
+   // Center the table horizontally
+   const pageWidth = doc.page.width;
+   const centeredX = (pageWidth - tableWidth) / 2;
+   const finalX = startX !== undefined ? startX : centeredX;
+
       data.forEach((row, rowIndex) => {
         const currentHeight = rowIndex === 0 ? headerHeight : rowHeight;
         row.forEach((cell, colIndex) => {
-          const x = startX + colIndex * cellWidth;
+          const x = finalX + colIndex * cellWidth;
           const y = startY + (rowIndex === 0
             ? 0
             : headerHeight + (rowIndex - 1) * rowHeight);
           doc.rect(x, y, cellWidth, currentHeight)
              .fill(rowIndex === 0 ? '#E0E0E0' : 'white')
              .stroke('#000000');
+
+             if (colIndex > 0) {
+                doc.moveTo(x, y)
+                   .lineTo(x, y + currentHeight)
+                   .stroke('#000000');
+            }
+
+            // Add horizontal lines between rows
+            if (rowIndex > 0) {
+                doc.moveTo(finalX, y)
+                   .lineTo(finalX + tableWidth, y)
+                   .stroke('#000000');
+            }
+
           doc.fillColor('black')
             .fontSize(10)
             .font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
-            .text(cell, x + 5, y + 5, { width: cellWidth - 10, align: 'center' });
+            .text(cell, x, y + (currentHeight / 2 - 5), {
+                    width: cellWidth,
+                    align: 'center',
+                    baseline: 'top'
+                });
         });
       });
 
-      const tableWidth = data[0].length * cellWidth;
-      const tableHeight = headerHeight + (data.length - 1) * rowHeight;
-      doc.rect(startX, startY, tableWidth, tableHeight).stroke('#000000');
+      doc.rect(finalX, startY, tableWidth, tableHeight).stroke('#000000');
     }
 
-    drawWindTable(doc, windTableData, tableX, tableY, cellWidth, headerHeight, cellHeight);
+    drawWindTable(doc, windTableData, undefined, tableY, cellWidth, headerHeight, cellHeight);
 
     //graf hitrosti vetra
     const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: 800, height: 600 });
@@ -292,50 +317,78 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       const column1 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(0, half).map(d => [d.speed.toString(), d.power.toString()])];
       const column2 = [['Hitrost (m/s)', 'Moč (kW)'], ...turbineData.slice(half).map(d => [d.speed.toString(), d.power.toString()])];
       //izris tabele moči turbine
-    const tableY = doc.y + 20;
-    const cellWidth = 60;  
-    const cellHeight = 16;  
-    const columnGap = 60;   
-    const totalTableWidth = column1[0].length * cellWidth + column2[0].length * cellWidth + columnGap;
-    const tableX = (doc.page.width - totalTableWidth) / 2;
-    function drawColumn(doc, data, startX, startY, cellWidth, cellHeight) {
+      const tableY = doc.y + 20;
+  const cellWidth = 60;
+  const cellHeight = 16;
+  const columnGap = 60;
+  const totalTableWidth = column1[0].length * cellWidth + column2[0].length * cellWidth + columnGap;
+  const tableX = (doc.page.width - totalTableWidth) / 2;
 
-    data.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-        const x = startX + colIndex * cellWidth;
-        const y = startY + rowIndex * cellHeight;
-        doc.rect(x, y, cellWidth, cellHeight)
-            .fill(rowIndex === 0 ? '#E0E0E0' : 'white')
-            .stroke('#000000');
-        doc.fillColor('black').fontSize(9).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
-            .text(cell, x + 2, y + 4, { width: cellWidth - 4, align: 'center' });
-        });
-    });
+  function drawColumn(doc, data, startX, startY, cellWidth, cellHeight) {
+      const tableWidth = data[0].length * cellWidth;
+      const tableHeight = data.length * cellHeight;
 
-    const tableWidth = data[0].length * cellWidth;
-    const tableHeight = data.length * cellHeight;
+      data.forEach((row, rowIndex) => {
+          const currentHeight = cellHeight; // Consistent height for all rows
 
+          row.forEach((cell, colIndex) => {
+              const x = startX + colIndex * cellWidth;
+              const y = startY + rowIndex * cellHeight;
 
-    doc.rect(startX, startY, tableWidth, tableHeight).stroke('#000000');
+              // Draw cell background and border
+              doc.rect(x, y, cellWidth, currentHeight)
+                 .fill(rowIndex === 0 ? '#E0E0E0' : 'white')
+                 .stroke('#000000');
 
+              // Add vertical lines between columns
+              if (colIndex > 0) {
+                  doc.moveTo(x, y)
+                     .lineTo(x, y + currentHeight)
+                     .stroke('#000000');
+              }
 
-    doc.moveTo(startX, startY + cellHeight)
-        .lineTo(startX + tableWidth, startY + cellHeight)
-        .lineWidth(1)
-        .stroke('#000000');
+              // Add horizontal lines between rows
+              if (rowIndex > 0) {
+                  doc.moveTo(startX, y)
+                     .lineTo(startX + tableWidth, y)
+                     .stroke('#000000');
+              }
 
+              // Add cell content
+              doc.fillColor('black')
+                 .fontSize(9)
+                 .font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
+                 .text(cell, x, y + (currentHeight / 2 - 3), {
+                     width: cellWidth,
+                     align: 'center',
+                     baseline: 'top'
+                 });
+          });
+      });
 
-    if (data[0].length > 1) {
-        doc.moveTo(startX + cellWidth, startY + cellHeight)
-        .lineTo(startX + cellWidth, startY + tableHeight)
-        .lineWidth(1)
-        .stroke('#000000');
-    }
-    }
+      // Draw outer table border
+      doc.rect(startX, startY, tableWidth, tableHeight)
+         .stroke('#000000');
 
-    drawColumn(doc, column1, tableX, tableY, cellWidth, cellHeight);
-    drawColumn(doc, column2, tableX + column1[0].length * cellWidth + columnGap, tableY, cellWidth, cellHeight);
-       
+      // Draw header separator
+      doc.moveTo(startX, startY + cellHeight)
+         .lineTo(startX + tableWidth, startY + cellHeight)
+         .lineWidth(1)
+         .stroke('#000000');
+
+      // Draw column separator if multiple columns
+      if (data[0].length > 1) {
+          doc.moveTo(startX + cellWidth, startY)
+             .lineTo(startX + cellWidth, startY + tableHeight)
+             .lineWidth(1)
+             .stroke('#000000');
+      }
+  }
+
+  // Draw both columns
+  drawColumn(doc, column1, tableX, tableY, cellWidth, cellHeight);
+  drawColumn(doc, column2, tableX + column1[0].length * cellWidth + columnGap, tableY, cellWidth, cellHeight);
+
     // Graf moči turbine
     let graphY = tableY + (Math.max(column1.length, column2.length)) * cellHeight + 20;
     const curveImg = await chartJSNodeCanvas.renderToBuffer({
@@ -364,7 +417,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     }
     });
 
-    const graphWidth = 350; 
+    const graphWidth = 350;
     const graphX = (doc.page.width - graphWidth) / 2;
     doc.image(curveImg, graphX, graphY, { width: graphWidth, height: 200 });
     }
