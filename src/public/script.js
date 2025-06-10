@@ -35,6 +35,30 @@ map.on('click', function (e) {
   document.getElementById("sidebar").style.transform = "translateX(0)";
 });
 
+function updateMarkerFromInputs() {
+  const lat = parseFloat(document.getElementById('latitude').value);
+  const lon = parseFloat(document.getElementById('longitude').value);
+
+  if (
+    !isNaN(lat) && !isNaN(lon) &&
+    lat >= -90 && lat <= 90 &&
+    lon >= -180 && lon <= 180
+  ) {
+    if (currentMarker) {
+      map.removeLayer(currentMarker);
+    }
+    currentMarker = L.marker([lat, lon], { icon: windTurbineIcon })
+      .addTo(map)
+      .bindPopup("Izbrana lokacija")
+      .openPopup();
+    map.setView([lat, lon], 10);
+  }
+}
+
+document.getElementById('latitude').addEventListener('change', updateMarkerFromInputs);
+document.getElementById('longitude').addEventListener('change', updateMarkerFromInputs);
+
+
 // Sidebar toggle
 document.getElementById("toggleForm").addEventListener("click", () => {
   const sidebar = document.getElementById("sidebar");
@@ -85,38 +109,53 @@ document.addEventListener("DOMContentLoaded", () => {
   naloziDropdown();
 
   //gumb za preklop med grafi
-  const toggleButtonPlugin = {
-    id: 'toggleButton',
-    afterDraw(chart) {
-      const { ctx, chartArea } = chart;
-      const isWeekly = chartType === 'weekly';
-      const buttonText = isWeekly ? 'Pojdi na mesečni graf' : 'Pojdi na tedenski graf';
-      const buttonWidth = 120;
-      const buttonHeight = 20;
-      const padding = 8;
+  // const toggleButtonPlugin = {
+  //   id: 'toggleButton',
+  //   afterDraw(chart) {
+  //     const { ctx, chartArea } = chart;
+  //     const isWeekly = chartType === 'weekly';
+  //     const buttonText = isWeekly ? 'Pojdi na mesečni graf' : 'Pojdi na tedenski graf';
+  //     const buttonWidth = 120;
+  //     const buttonHeight = 20;
+  //     const padding = 8;
 
-      const x = chart.width - buttonWidth - padding;
-      const y = padding;
+  //     const x = chart.width - buttonWidth - padding;
+  //     const y = padding;
 
-      ctx.fillStyle = '#4BC0C0';
-      ctx.fillRect(x, y, buttonWidth, buttonHeight);
+  //     ctx.fillStyle = '#4BC0C0';
+  //     ctx.fillRect(x, y, buttonWidth, buttonHeight);
 
-      ctx.strokeStyle = '#2A6A6A';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, buttonWidth, buttonHeight);
+  //     ctx.strokeStyle = '#2A6A6A';
+  //     ctx.lineWidth = 1;
+  //     ctx.strokeRect(x, y, buttonWidth, buttonHeight);
 
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = '11px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(buttonText, x + buttonWidth / 2, y + buttonHeight / 2);
+  //     ctx.fillStyle = '#FFFFFF';
+  //     ctx.font = '11px Arial';
+  //     ctx.textAlign = 'center';
+  //     ctx.textBaseline = 'middle';
+  //     ctx.fillText(buttonText, x + buttonWidth / 2, y + buttonHeight / 2);
 
-      chart.toggleButton = { x, y, width: buttonWidth, height: buttonHeight };
+  //     chart.toggleButton = { x, y, width: buttonWidth, height: buttonHeight };
+  //   }
+  // };
+
+  // Chart.register(toggleButtonPlugin);
+
+  const toggleChartTypeBtn = document.getElementById('toggle-chart-type-btn');
+if (toggleChartTypeBtn) {
+  toggleChartTypeBtn.addEventListener('click', () => {
+    chartType = chartType === 'weekly' ? 'monthly' : 'weekly';
+    toggleChartTypeBtn.textContent = chartType === 'weekly' ? 'Pojdi na mesečni graf' : 'Pojdi na tedenski graf';
+    const energyData1 = chartType === 'weekly' ? firstTurbineData.weeklyEnergy : firstTurbineData.monthlyEnergy;
+    let energyData2 = null;
+    let turbineName2 = null;
+    if (compareTurbineData) {
+      energyData2 = chartType === 'weekly' ? compareTurbineData.weeklyEnergy : compareTurbineData.monthlyEnergy;
+      turbineName2 = compareTurbineData.name;
     }
-  };
-
-  Chart.register(toggleButtonPlugin);
-
+    updateChart(energyData1, firstTurbineData.name, energyData2, turbineName2);
+  });
+}
   //ustvarjanje ali posodabljanje grafa
   function updateChart(energyData1, turbineName1, energyData2 = null, turbineName2 = null) {
   const ctx = document.getElementById('energy-chart').getContext('2d');
@@ -574,3 +613,5 @@ function hideLoading() {
   const loadingIndicator = document.getElementById('loadingIndicator');
   loadingIndicator.style.display = 'none';
 }
+
+

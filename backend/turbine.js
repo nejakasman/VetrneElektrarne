@@ -171,12 +171,7 @@ ipcMain.handle('save-calculation-history', async (event, { latitude, longitude, 
     if (locRow) {
       lokacijaId = locRow.id;
     } else {
-      lokacijaId = await new Promise((resolve, reject) => {
-        db.run("INSERT INTO Lokacija (latitude, longitude) VALUES (?, ?)", [latitude, longitude], function(err) {
-          if (err) reject(err);
-          else resolve(this.lastID);
-        });
-      });
+      throw new Error("Lokacija ne obstaja v bazi.");
     }
 
 

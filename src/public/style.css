@@ -20,7 +20,7 @@ body, html {
 
 #sidebar {
     z-index: 1040;
-    background-color: #f1fffa !important;
+    background-color: #F8F8FF !important;
 }
 
 .nav-link {
@@ -210,4 +210,32 @@ form {
 #generate-pdf-btn:hover {
   background-color: rgba(44, 130, 106, 1) !important;
   color: #fff !important;
+}
+
+.custom-toggle-btn {
+  background-color: #4BC0C0;
+  color: #fff;
+  border: 1px solid #2A6A6A;
+  border-radius: 4px;
+  width: 120px;
+  height: 32px;
+  font-size: 11px;
+  font-family: Arial, sans-serif;
+  font-weight: normal;
+  text-align: center;
+  padding: 0;
+  transition: background 0.2s, color 0.2s;
+  box-shadow: none;
+ 
+}
+
+ #toggle-chart-type-btn {
+  position: static !important;
+  left: unset !important;
+  top: unset !important;
+  right: unset !important;
+  transform: none !important;
+  margin-bottom: 10px;
+  align-self: flex-end;
+  z-index: 10;
 }

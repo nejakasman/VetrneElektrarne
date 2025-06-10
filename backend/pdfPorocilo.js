@@ -446,6 +446,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       });
 
       doc.image(monthlyChart, 100, doc.y + 20, { width: 350, height: 250 });
+      doc.moveDown(3);
       doc.image(weeklyChart, 100, doc.y + 270, { width: 350, height: 250 });
     }
 
