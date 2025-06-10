@@ -173,11 +173,11 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     //tabela povprečne, maksimalne in minimalne hitrosti vetra
     function drawWindTable(doc, data, startX, startY, cellWidth, headerHeight, rowHeight) {
 
-      // Calculate table dimensions
+
    const tableWidth = data[0].length * cellWidth;
    const tableHeight = headerHeight + (data.length - 1) * rowHeight;
 
-   // Center the table horizontally
+
    const pageWidth = doc.page.width;
    const centeredX = (pageWidth - tableWidth) / 2;
    const finalX = startX !== undefined ? startX : centeredX;
@@ -199,7 +199,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
                    .stroke('#000000');
             }
 
-            // Add horizontal lines between rows
+
             if (rowIndex > 0) {
                 doc.moveTo(finalX, y)
                    .lineTo(finalX + tableWidth, y)
@@ -329,32 +329,32 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       const tableHeight = data.length * cellHeight;
 
       data.forEach((row, rowIndex) => {
-          const currentHeight = cellHeight; // Consistent height for all rows
+          const currentHeight = cellHeight; 
 
           row.forEach((cell, colIndex) => {
               const x = startX + colIndex * cellWidth;
               const y = startY + rowIndex * cellHeight;
 
-              // Draw cell background and border
+              
               doc.rect(x, y, cellWidth, currentHeight)
                  .fill(rowIndex === 0 ? '#E0E0E0' : 'white')
                  .stroke('#000000');
 
-              // Add vertical lines between columns
+
               if (colIndex > 0) {
                   doc.moveTo(x, y)
                      .lineTo(x, y + currentHeight)
                      .stroke('#000000');
               }
 
-              // Add horizontal lines between rows
+             
               if (rowIndex > 0) {
                   doc.moveTo(startX, y)
                      .lineTo(startX + tableWidth, y)
                      .stroke('#000000');
               }
 
-              // Add cell content
+              
               doc.fillColor('black')
                  .fontSize(9)
                  .font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
@@ -366,17 +366,17 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           });
       });
 
-      // Draw outer table border
+    
       doc.rect(startX, startY, tableWidth, tableHeight)
          .stroke('#000000');
 
-      // Draw header separator
+      
       doc.moveTo(startX, startY + cellHeight)
          .lineTo(startX + tableWidth, startY + cellHeight)
          .lineWidth(1)
          .stroke('#000000');
 
-      // Draw column separator if multiple columns
+     
       if (data[0].length > 1) {
           doc.moveTo(startX + cellWidth, startY)
              .lineTo(startX + cellWidth, startY + tableHeight)
@@ -385,7 +385,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       }
   }
 
-  // Draw both columns
+  
   drawColumn(doc, column1, tableX, tableY, cellWidth, cellHeight);
   drawColumn(doc, column2, tableX + column1[0].length * cellWidth + columnGap, tableY, cellWidth, cellHeight);
 

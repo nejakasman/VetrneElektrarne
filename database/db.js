@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { turbineIzJSON } = require('./podatkiTurbine');
 
 const dbPath = path.resolve(__dirname, './vetrneElektrarne.db');
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -63,6 +64,12 @@ function initDatabase() {
         FOREIGN KEY (turbine_id) REFERENCES Turbine(id) ON DELETE CASCADE
       )
     `);
+
+        db.get("SELECT COUNT(*) as count FROM Turbine", (err, row) => {
+      if (!err && row.count === 0) {
+        turbineIzJSON();
+      }
+    });
   });
 }
 

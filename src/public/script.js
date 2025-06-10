@@ -341,8 +341,7 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
       updateChart(energyData, selectedTurbineName);
 
       await ipcRenderer.invoke("save-calculation-history", {
-        latitude: lat,
-        longitude: lon,
+        lokacija_id: windResult.lokacija_id, 
         turbineName: selectedTurbineName,
         annualEnergy: energyResult.totalEnergy,
         weeklyEnergy: energyResult.weeklyEnergy,

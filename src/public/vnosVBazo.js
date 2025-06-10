@@ -6,10 +6,7 @@ const { fetchWeatherData } = require('./pridobi-veter');
 async function findOrFetchWeatherData(latitude, longitude) {
   return new Promise((resolve, reject) => {
     db.all("SELECT id, latitude, longitude FROM Lokacija", [], (err, rows) => {
-      if (err) {
-        console.error('Error querying Lokacija:', err);
-        return reject(err);
-      }
+      if (err) return reject(err);
 
       const nearbyLocation = rows.find(row => {
         return geolib.getDistance(
@@ -23,11 +20,8 @@ async function findOrFetchWeatherData(latitude, longitude) {
           "SELECT datum AS datetime, wind_speed_10m, wind_speed_100m FROM Veter WHERE lokacija_id = ?",
           [nearbyLocation.id],
           (err, measurements) => {
-            if (err) {
-              console.error('Error querying Veter:', err);
-              return reject(err);
-            }
-            resolve(measurements);
+            if (err) return reject(err);
+            resolve({ measurements, lokacija_id: nearbyLocation.id });
           }
         );
       } else {
@@ -37,10 +31,7 @@ async function findOrFetchWeatherData(latitude, longitude) {
               "INSERT INTO Lokacija (latitude, longitude) VALUES (?, ?)",
               [latitude, longitude],
               function(err) {
-                if (err) {
-                  console.error('Error inserting into Lokacija:', err);
-                  return reject(err);
-                }
+                if (err) return reject(err);
                 const lokacija_id = this.lastID;
 
                 const measurements = data.hourly.time.map((time, index) => ({
@@ -71,7 +62,7 @@ async function findOrFetchWeatherData(latitude, longitude) {
                 });
 
                 Promise.all(insertPromises)
-                  .then(() => resolve(measurements))
+                  .then(() => resolve({ measurements, lokacija_id }))
                   .catch(err => {
                     console.error('Error inserting measurements:', err);
                     reject(err);

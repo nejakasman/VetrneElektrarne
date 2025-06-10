@@ -117,8 +117,8 @@ ipcMain.handle('turbine-delete', (event, name) => {
 
 ipcMain.handle('weather-fetch', async (event, { latitude, longitude }) => {
   try {
-    const data = await findOrFetchWeatherData(latitude, longitude);
-    return { status: 'success', data };
+    const { measurements, lokacija_id } = await findOrFetchWeatherData(latitude, longitude);
+    return { status: 'success', data: measurements, lokacija_id };
   } catch (err) {
     console.error('Napaka v weather-fetch:', err);
     return { status: 'error', message: err.message };
@@ -158,68 +158,57 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName 
   }
 });
 
-ipcMain.handle('save-calculation-history', async (event, { latitude, longitude, turbineName, annualEnergy, weeklyEnergy }) => {
-  try {
 
-    let lokacijaId;
-    const locRow = await new Promise((resolve, reject) => {
-      db.get("SELECT id FROM Lokacija WHERE latitude = ? AND longitude = ?", [latitude, longitude], (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
-    if (locRow) {
-      lokacijaId = locRow.id;
-    } else {
-      throw new Error("Lokacija ne obstaja v bazi.");
-    }
-
-
-    const turbineRow = await new Promise((resolve, reject) => {
-      db.get("SELECT id FROM Turbine WHERE name = ?", [turbineName], (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
-    if (!turbineRow) throw new Error("Turbina ne obstaja.");
-    const turbineId = turbineRow.id;
-
-
-    await new Promise((resolve, reject) => {
-      const now = new Date();
-      const isoDate = now.toISOString(); 
-      db.run(
-        `INSERT INTO Zgodovina_Izracunov
-         (lokacija_id, turbine_id, letna_energija, tedenska_energija, datum)
-         VALUES (?, ?, ?, ?, ?)`,
-        [lokacijaId, turbineId, annualEnergy, JSON.stringify(weeklyEnergy), isoDate],
-        function(err) {
-          if (err) reject(err);
-          else resolve();
-        }
-      );
-      });
-
-
-    return { status: "success" };
-  } catch (err) {
-    console.error("Napaka pri shranjevanju Zgodovina_Izracunov:", err);
-    return { status: "error", message: err.message };
-  }
+ipcMain.handle('save-calculation-history', async (event, data) => {
+  const { lokacija_id, turbineName, annualEnergy, weeklyEnergy, monthlyEnergy } = data;
+  return new Promise((resolve, reject) => {
+    db.get(
+      "SELECT id FROM Turbine WHERE name = ?",
+      [turbineName],
+      (err, turbRow) => {
+        if (err) return reject(err);
+        if (!turbRow) return reject(new Error("Turbina ne obstaja v bazi."));
+        db.run(
+          `INSERT INTO Zgodovina_Izracunov 
+            (lokacija_id, turbine_id, letna_energija, tedenska_energija, datum)
+            VALUES (?, ?, ?, ?, datetime('now'))`,
+          [
+            lokacija_id,
+            turbRow.id,
+            annualEnergy,
+            JSON.stringify(weeklyEnergy)
+          ],
+          function (err) {
+            if (err) return reject(err);
+            resolve({ status: "success" });
+          }
+        );
+      }
+    );
+  });
 });
 
 ipcMain.handle('get-calculation-history', async () => {
   return new Promise((resolve, reject) => {
-    db.all(`
-      SELECT ch.id, ch.letna_energija, ch.tedenska_energija, ch.datum,
-             l.latitude, l.longitude, t.name AS turbine_name
-      FROM Zgodovina_Izracunov ch
-      JOIN Lokacija l ON ch.lokacija_id = l.id
-      JOIN Turbine t ON ch.turbine_id = t.id
-      ORDER BY ch.datum DESC
-    `, [], (err, rows) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
+    db.all(
+      `SELECT 
+        Zgodovina_Izracunov.id,
+        Lokacija.latitude,
+        Lokacija.longitude,
+        Turbine.name AS turbine_name,
+        Zgodovina_Izracunov.letna_energija,
+        Zgodovina_Izracunov.tedenska_energija,
+        Zgodovina_Izracunov.datum
+      FROM Zgodovina_Izracunov
+      JOIN Lokacija ON Zgodovina_Izracunov.lokacija_id = Lokacija.id
+      JOIN Turbine ON Zgodovina_Izracunov.turbine_id = Turbine.id
+      ORDER BY Zgodovina_Izracunov.datum DESC
+      `,
+      [],
+      (err, rows) => {
+        if (err) return reject(err);
+        resolve(rows);
+      }
+    );
   });
 });
