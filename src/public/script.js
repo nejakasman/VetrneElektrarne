@@ -540,6 +540,8 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
 
   if (canceled || !filePath) return;
 
+  showLoadingPDF();
+
   const location = {
     latitude: document.getElementById('latitude').value,
     longitude: document.getElementById('longitude').value
@@ -572,21 +574,27 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
    alert('Podatki za prvo turbino niso na voljo. Prosim, izvedite izračun.');
     return;
   }
+  try {
+    const result = await ipcRenderer.invoke('generate-pdf-report', {
+      location,
+      turbines,
+      windData: windDataCache,
+      energyResults,
+      filePath
+    });
 
-  const result = await ipcRenderer.invoke('generate-pdf-report', {
-    location,
-    turbines,
-    windData: windDataCache,
-    energyResults,
-    filePath
-  });
+    hideLoadingPDF();
 
-  if (result.status === 'success') {
-   alert('PDF poročilo je bilo ustvarjeno: ' + result.filePath);
-    require('electron').shell.openPath(result.filePath);
-  } else {
-   alert('Napaka pri generiranju PDF: ' + result.message);
-  }
+    if (result.status === 'success') {
+    alert('PDF poročilo je bilo ustvarjeno: ' + result.filePath);
+      require('electron').shell.openPath(result.filePath);
+    } else {
+    alert('Napaka pri generiranju PDF: ' + result.message);
+    }
+  } catch (error) {
+    hideLoadingPDF();
+    showAlert('Napaka pri generiranju PDF: ' + error.message);
+}
 });
 });
 
@@ -614,4 +622,12 @@ function hideLoading() {
   loadingIndicator.style.display = 'none';
 }
 
+function showLoadingPDF() {
+  const loadingPDF = document.getElementById('loadingPDF');
+  if (loadingPDF) loadingPDF.style.display = 'flex';
+}
 
+function hideLoadingPDF() {
+  const loadingPDF = document.getElementById('loadingPDF');
+  if (loadingPDF) loadingPDF.style.display = 'none';
+}
