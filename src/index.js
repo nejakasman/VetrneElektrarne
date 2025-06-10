@@ -1,6 +1,7 @@
 const { app, BrowserWindow } = require('electron');
 const { initDatabase } = require('../database/db');
 const remoteMain = require('@electron/remote/main'); 
+const path = require('path');
 
 remoteMain.initialize();
 
@@ -14,8 +15,9 @@ require('../backend/pdfPorocilo');
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 800,
+    icon: path.join(__dirname, 'assets', 'icon.icns'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -23,7 +25,9 @@ function createWindow() {
   });
   remoteMain.enable(win.webContents);
   win.loadFile('src/public/index.html');
-  win.webContents.openDevTools();
+  if (!app.isPackaged) {
+  mainWindow.webContents.openDevTools();
+}
 }
 
 

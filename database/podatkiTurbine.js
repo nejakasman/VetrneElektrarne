@@ -1,8 +1,6 @@
-const { db } = require('./db');
-
 const fs = require('fs');
 const path = require('path');
-function turbineIzJSON() {
+function turbineIzJSON(db) { 
   const jsonPath = path.resolve(__dirname, '../database/turbines.json');
   const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
@@ -12,13 +10,11 @@ function turbineIzJSON() {
         if (err) return console.error('Napaka pri iskanju turbine:', err);
 
         if (row) {
-          // Turbina že obstaja
-          insertHitrosti(row.id, turbina);
+          insertHitrosti(db, row.id, turbina);
         } else {
-          // Turbina še ne obstaja
           db.run(`INSERT INTO Turbine (name) VALUES (?)`, [turbina.name], function(err) {
             if (err) return console.error('Napaka pri vstavljanju turbine:', err);
-            insertHitrosti(this.lastID, turbina);
+            insertHitrosti(db, this.lastID, turbina); 
           });
         }
       });
@@ -26,7 +22,7 @@ function turbineIzJSON() {
   });
 }
 
-function insertHitrosti(turbineId, turbina) {
+function insertHitrosti(db, turbineId, turbina) {
   turbina.speeds.forEach((speed, index) => {
     const power = turbina.powers[index];
     db.run(
@@ -38,6 +34,5 @@ function insertHitrosti(turbineId, turbina) {
     );
   });
 }
-
 
 module.exports = { turbineIzJSON };

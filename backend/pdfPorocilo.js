@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron');
+const { app, ipcMain, BrowserWindow } = require('electron');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
@@ -13,14 +13,24 @@ async function getLocationName(lat, lon) {
     const data = await res.json();
     return data.display_name || 'Neznana lokacija';
   } catch (error) {
-    console.error('Napaka pri pridobivanju imena lokacije:', error);
     return 'Napaka pri pridobivanju lokacije';
   }
 }
 
 //pridobivanje statične slike zemljevida za PDF
 async function getLeafletMapImage(lat, lon) {
-  const mapPath = path.join(__dirname, 'map.png');
+  const mapPath = path.join(app.getPath('userData'), 'map.png');
+  let win = new BrowserWindow({
+    width: 600,
+    height: 300,
+    show: false,
+    webPreferences: { 
+        offscreen: true,
+        webSecurity: false,
+        allowRunningInsecureContent: true
+     }
+  });
+
   const html = `
     <!DOCTYPE html>
     <html>
@@ -54,18 +64,11 @@ async function getLeafletMapImage(lat, lon) {
     </html>
   `;
   try {
-    const browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox'] });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const mapElement = await page.$('#map');
-    if (!mapElement) {
-      await browser.close();
-      throw new Error('Map element not found');
-    }
-    await mapElement.screenshot({ path: mapPath });
-    await browser.close();
+    await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html));
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    const image = await win.webContents.capturePage();
+    fs.writeFileSync(mapPath, image.toPNG());
+    win.destroy();
     return mapPath;
   } catch (err) {
     return null;
@@ -173,10 +176,8 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     //tabela povprečne, maksimalne in minimalne hitrosti vetra
     function drawWindTable(doc, data, startX, startY, cellWidth, headerHeight, rowHeight) {
 
-
    const tableWidth = data[0].length * cellWidth;
    const tableHeight = headerHeight + (data.length - 1) * rowHeight;
-
 
    const pageWidth = doc.page.width;
    const centeredX = (pageWidth - tableWidth) / 2;
@@ -198,7 +199,6 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
                    .lineTo(x, y + currentHeight)
                    .stroke('#000000');
             }
-
 
             if (rowIndex > 0) {
                 doc.moveTo(finalX, y)
@@ -335,11 +335,9 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
               const x = startX + colIndex * cellWidth;
               const y = startY + rowIndex * cellHeight;
 
-              
               doc.rect(x, y, cellWidth, currentHeight)
                  .fill(rowIndex === 0 ? '#E0E0E0' : 'white')
                  .stroke('#000000');
-
 
               if (colIndex > 0) {
                   doc.moveTo(x, y)
@@ -347,14 +345,12 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
                      .stroke('#000000');
               }
 
-             
               if (rowIndex > 0) {
                   doc.moveTo(startX, y)
                      .lineTo(startX + tableWidth, y)
                      .stroke('#000000');
               }
 
-              
               doc.fillColor('black')
                  .fontSize(9)
                  .font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
@@ -366,17 +362,14 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
           });
       });
 
-    
       doc.rect(startX, startY, tableWidth, tableHeight)
          .stroke('#000000');
 
-      
       doc.moveTo(startX, startY + cellHeight)
          .lineTo(startX + tableWidth, startY + cellHeight)
          .lineWidth(1)
          .stroke('#000000');
 
-     
       if (data[0].length > 1) {
           doc.moveTo(startX + cellWidth, startY)
              .lineTo(startX + cellWidth, startY + tableHeight)
@@ -385,7 +378,6 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       }
   }
 
-  
   drawColumn(doc, column1, tableX, tableY, cellWidth, cellHeight);
   drawColumn(doc, column2, tableX + column1[0].length * cellWidth + columnGap, tableY, cellWidth, cellHeight);
 

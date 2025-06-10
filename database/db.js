@@ -1,8 +1,9 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const { app } = require('electron');
 const { turbineIzJSON } = require('./podatkiTurbine');
 
-const dbPath = path.resolve(__dirname, './vetrneElektrarne.db');
+const dbPath = path.join(app.getPath('userData'), 'vetrneElektrarne.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Napaka pri povezavi z bazo:', err.message);
@@ -67,7 +68,7 @@ function initDatabase() {
 
         db.get("SELECT COUNT(*) as count FROM Turbine", (err, row) => {
       if (!err && row.count === 0) {
-        turbineIzJSON();
+        turbineIzJSON(db);
       }
     });
   });

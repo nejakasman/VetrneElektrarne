@@ -597,6 +597,51 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
 });
 });
 
+// Povezava na internet
+async function checkInternetConnection() {
+  try {
+    // pošlje zahtevo na znan naslov
+    const response = await fetch('https://www.google.com/favicon.ico', { method: 'HEAD', cache: 'no-store' });
+    return response.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function updateOnlineStatus() {
+  const offlineBannerId = 'offline-banner';
+  let banner = document.getElementById(offlineBannerId);
+
+  const isOnline = await checkInternetConnection();
+
+  if (!isOnline) {
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = offlineBannerId;
+      banner.style.position = 'fixed';
+      banner.style.top = '0';
+      banner.style.left = '0';
+      banner.style.width = '100vw';
+      banner.style.background = '#d9534f';
+      banner.style.color = 'white';
+      banner.style.textAlign = 'center';
+      banner.style.padding = '1em';
+      banner.style.zIndex = '9999';
+      banner.textContent = 'Ups! Videti je, da nimate povezave z internetom. Za dostop do podatkov je potrebna internetna povezava. Prosimo, preverite povezavo in poskusite znova.';
+      document.body.appendChild(banner);
+    }
+  } else {
+    if (banner) {
+      banner.remove();
+    }
+  }
+}
+
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+updateOnlineStatus();
+
 //alert okno
 function showAlert(message) {
   const modal = document.getElementById('simpleModal');
