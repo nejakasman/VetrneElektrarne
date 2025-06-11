@@ -161,6 +161,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName 
 
 ipcMain.handle('save-calculation-history', async (event, data) => {
   const { lokacija_id, turbineName, annualEnergy, weeklyEnergy, monthlyEnergy, windData } = data;
+
   return new Promise((resolve, reject) => {
     db.get(
       "SELECT id FROM Turbine WHERE name = ?",
@@ -168,17 +169,22 @@ ipcMain.handle('save-calculation-history', async (event, data) => {
       (err, turbRow) => {
         if (err) return reject(err);
         if (!turbRow) return reject(new Error("Turbina ne obstaja v bazi."));
+
+        const now = new Date();
+        const isoDate = now.toISOString(); 
+
         db.run(
           `INSERT INTO Zgodovina_Izracunov 
             (lokacija_id, turbine_id, letna_energija, tedenska_energija, mesecna_energija, wind_data, datum)
-            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             lokacija_id,
             turbRow.id,
             annualEnergy,
             JSON.stringify(weeklyEnergy),
             JSON.stringify(monthlyEnergy),
-            JSON.stringify(windData) 
+            JSON.stringify(windData),
+            isoDate
           ],
           function (err) {
             if (err) return reject(err);
