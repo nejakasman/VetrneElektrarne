@@ -160,7 +160,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName 
 
 
 ipcMain.handle('save-calculation-history', async (event, data) => {
-  const { lokacija_id, turbineName, annualEnergy, weeklyEnergy, monthlyEnergy } = data;
+  const { lokacija_id, turbineName, annualEnergy, weeklyEnergy, monthlyEnergy, windData } = data;
   return new Promise((resolve, reject) => {
     db.get(
       "SELECT id FROM Turbine WHERE name = ?",
@@ -170,13 +170,15 @@ ipcMain.handle('save-calculation-history', async (event, data) => {
         if (!turbRow) return reject(new Error("Turbina ne obstaja v bazi."));
         db.run(
           `INSERT INTO Zgodovina_Izracunov 
-            (lokacija_id, turbine_id, letna_energija, tedenska_energija, datum)
-            VALUES (?, ?, ?, ?, datetime('now'))`,
+            (lokacija_id, turbine_id, letna_energija, tedenska_energija, mesecna_energija, wind_data, datum)
+            VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
           [
             lokacija_id,
             turbRow.id,
             annualEnergy,
-            JSON.stringify(weeklyEnergy)
+            JSON.stringify(weeklyEnergy),
+            JSON.stringify(monthlyEnergy),
+            JSON.stringify(windData) 
           ],
           function (err) {
             if (err) return reject(err);
@@ -187,7 +189,6 @@ ipcMain.handle('save-calculation-history', async (event, data) => {
     );
   });
 });
-
 ipcMain.handle('get-calculation-history', async () => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -198,6 +199,8 @@ ipcMain.handle('get-calculation-history', async () => {
         Turbine.name AS turbine_name,
         Zgodovina_Izracunov.letna_energija,
         Zgodovina_Izracunov.tedenska_energija,
+        Zgodovina_Izracunov.mesecna_energija,
+        Zgodovina_Izracunov.wind_data,
         Zgodovina_Izracunov.datum
       FROM Zgodovina_Izracunov
       JOIN Lokacija ON Zgodovina_Izracunov.lokacija_id = Lokacija.id

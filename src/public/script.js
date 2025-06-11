@@ -345,7 +345,8 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
         turbineName: selectedTurbineName,
         annualEnergy: energyResult.totalEnergy,
         weeklyEnergy: energyResult.weeklyEnergy,
-        monthlyEnergy: energyResult.monthlyEnergy
+        monthlyEnergy: energyResult.monthlyEnergy,
+        windData: windDataCache
       });
       await loadCalculationHistory();
 
@@ -501,17 +502,32 @@ loadHistoryBtn.addEventListener("click", () => {
     showAlert("Neveljavne koordinate v zgodovini.");
     return;
   }
+  document.getElementById('latitude').value = item.latitude;
+  document.getElementById('longitude').value = item.longitude;
 
-  // posodobitev grafa
-  updateChart(JSON.parse(item.tedenska_energija), item.turbine_name);
+  // Shrani podatke za preklapljanje grafov
+  firstTurbineData = {
+    name: item.turbine_name,
+    weeklyEnergy: JSON.parse(item.tedenska_energija),
+    monthlyEnergy: item.mesecna_energija ? JSON.parse(item.mesecna_energija) : [],
+    totalEnergy: (JSON.parse(item.tedenska_energija).reduce((sum, val) => sum + val, 0))
+  };
+  windDataCache = item.wind_data ? JSON.parse(item.wind_data) : null;
+
+  // Nastavi gumb na pravilen tekst
+  if (toggleChartTypeBtn) {
+    chartType = 'weekly';
+    toggleChartTypeBtn.textContent = 'Pojdi na mesečni graf';
+  }
+
+  // Posodobi graf (prikaže tedenski graf, omogoči preklop)
+  updateChart(firstTurbineData.weeklyEnergy, firstTurbineData.name);
 
   // posodobitev v sidebaru
   document.getElementById("result-turbine-name").textContent = item.turbine_name;
-  const tedenskaEnergija = JSON.parse(item.tedenska_energija);
-  const totalEnergy = tedenskaEnergija.reduce((sum, val) => sum + val, 0);
-  document.getElementById("result-annual-energy").textContent = (totalEnergy / 1000000).toFixed(2);
+  document.getElementById("result-annual-energy").textContent = (firstTurbineData.totalEnergy / 1000000).toFixed(2);
 
-  // Pinpoint na zameljevidu
+  // Pinpoint na zemljevidu
   if (currentMarker) {
     map.removeLayer(currentMarker);
   }

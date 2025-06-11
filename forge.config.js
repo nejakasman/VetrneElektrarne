@@ -1,11 +1,35 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 const path = require('path');
+const fs = require('fs');
 
 module.exports = {
   packagerConfig: {
-    asar: true,
+    asar: {
+       unpack: '**/canvas/**',
+    },
     icon: path.resolve(__dirname, 'src/assets/icon.icns'),  
+  },
+   hooks: {
+    async afterExtract(config, buildPath, electronVersion, platform, arch) {
+      const srcDir = path.resolve(__dirname, 'node_modules/canvas/build/Release');
+      const destDir = path.join(buildPath, 'resources', 'app.asar.unpacked', 'node_modules', 'canvas', 'build', 'Release');
+
+      if (fs.existsSync(srcDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+        for (const file of fs.readdirSync(srcDir)) {
+          if (file.endsWith('.dylib')) {
+            fs.copyFileSync(
+              path.join(srcDir, file),
+              path.join(destDir, file)
+            );
+            console.log(`Copied ${file} to ${destDir}`);
+          }
+        }
+      } else {
+        console.warn('Canvas build/Release mapa ni bila najdena.');
+      }
+    }
   },
   rebuildConfig: {},
   makers: [

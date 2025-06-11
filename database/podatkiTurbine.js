@@ -13,7 +13,13 @@ function turbineIzJSON(db) {
           insertHitrosti(db, row.id, turbina);
         } else {
           db.run(`INSERT INTO Turbine (name) VALUES (?)`, [turbina.name], function(err) {
-            if (err) return console.error('Napaka pri vstavljanju turbine:', err);
+            if (err) {
+    if (err.code === 'SQLITE_CONSTRAINT') {
+      return;
+    } else {
+      return console.error('Napaka pri vstavljanju turbine:', err);
+    }
+  }
             insertHitrosti(db, this.lastID, turbina); 
           });
         }

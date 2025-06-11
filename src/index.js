@@ -25,8 +25,8 @@ function createWindow() {
   });
   remoteMain.enable(win.webContents);
   win.loadFile('src/public/index.html');
-  if (!app.isPackaged) {
-  mainWindow.webContents.openDevTools();
+if (!app.isPackaged) {
+  win.webContents.openDevTools();
 }
 }
 

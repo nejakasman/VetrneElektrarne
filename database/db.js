@@ -4,6 +4,7 @@ const { app } = require('electron');
 const { turbineIzJSON } = require('./podatkiTurbine');
 
 const dbPath = path.join(app.getPath('userData'), 'vetrneElektrarne.db');
+// const dbPath = path.join(__dirname, 'vetrneElektrarne.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Napaka pri povezavi z bazo:', err.message);
@@ -60,6 +61,8 @@ function initDatabase() {
         turbine_id INTEGER,
         letna_energija REAL,
         tedenska_energija TEXT,
+        mesecna_energija TEXT,
+        wind_data TEXT,
         datum DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (lokacija_id) REFERENCES Lokacija(id) ON DELETE CASCADE,
         FOREIGN KEY (turbine_id) REFERENCES Turbine(id) ON DELETE CASCADE
