@@ -24,7 +24,7 @@ async function getLeafletMapImage(lat, lon) {
     width: 600,
     height: 300,
     show: false,
-    webPreferences: { 
+    webPreferences: {
         offscreen: true,
         webSecurity: false,
         allowRunningInsecureContent: true
@@ -114,12 +114,36 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       console.warn('Pisave Roboto niso najdene, uporaba privzete pisave Helvetica.');
       doc.font(fallbackFont);
     }
+  // Naslovna stran: ozadje, logo, naslov, spodnji datum
+    doc.addPage({ size: 'A4' });
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill('#F5F5F5');
+
+    const logoPath = path.resolve(__dirname, '../src/assets/SkupinaHSE_DEM_RGB.png');
+    const logoWidth = 100;
+    doc.image(logoPath, doc.page.width - logoWidth - 40, 40, { width: logoWidth });
+
+    const naslov = 'Poročilo o potencialu vetrne elektrarne';
+    const titleY = 350;
+
+    doc.fillColor('#2E2E2E').fontSize(24).font('Roboto-Bold');
+    doc.moveTo(60, titleY - 20).lineTo(doc.page.width - 60, titleY - 20).stroke('#999999');
+    doc.text(naslov, 60, titleY, { align: 'center', width: doc.page.width - 120 });
+    doc.moveTo(60, titleY + 40).lineTo(doc.page.width - 60, titleY + 40).stroke('#999999');
+
+    const datum = new Date();
+    const formattedDate = `VeterON, ${datum.getDate()}. ${datum.getMonth() + 1}. ${datum.getFullYear()}`;
+    doc.fontSize(12).fillColor('#333333').font('Roboto')
+       .text(formattedDate, 0, doc.page.height - 90, {
+         align: 'right',
+         width: doc.page.width - 60
+       });
+
     //Prva stran: naslov, uvod, podatki o lokaciji in zemljevid
     doc.addPage({ size: 'A4' });
     doc.rect(0, 0, doc.page.width, doc.page.height).fill('white');
-    doc.fillColor('#2E2E2E').fontSize(24).font('Roboto-Bold')
-      .text('Poročilo o potencialu vetrne elektrarne', 40, 70, { align: 'center', width: doc.page.width - 80 });
-      doc.moveTo(40, 100).lineTo(doc.page.width - 40, 100).lineWidth(1).stroke('#000000');
+    doc.fillColor('black').fontSize(16).font(fs.existsSync(fontBoldPath) ? 'Roboto-Bold' : 'Helvetica-Bold')
+      .text('Lokacija', 40, 50);
+      doc.moveTo(40, 70).lineTo(doc.page.width - 40, 70).lineWidth(1).stroke('#000000');
     doc.moveDown();
     doc.fontSize(14).text(`Datum: ${new Date().toLocaleString('sl-SI', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`);
     doc.moveDown();
@@ -144,8 +168,6 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     } else {
       doc.text('Zemljevid ni na voljo.', 40, doc.y, { align: 'center' });
     }
-
-
 
     //druga stran: hitrosti vetra + tabela in graf
     doc.addPage({ size: 'A4' });
@@ -329,7 +351,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       const tableHeight = data.length * cellHeight;
 
       data.forEach((row, rowIndex) => {
-          const currentHeight = cellHeight; 
+          const currentHeight = cellHeight;
 
           row.forEach((cell, colIndex) => {
               const x = startX + colIndex * cellWidth;
