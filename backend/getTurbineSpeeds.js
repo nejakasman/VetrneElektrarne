@@ -1,10 +1,10 @@
-const { db } = require('../database/db');
+const { db } = require('./database/db');
 
 function getTurbineSpeeds(turbineName) {
   return new Promise((resolve, reject) => {
     db.get("SELECT id FROM Turbine WHERE name = ?", [turbineName], (err, row) => {
       if (err) return reject(err);
-      if (!row) return resolve([]);
+      if (!row) return resolve({ speeds: [], powers: [] });
 
       const turbineId = row.id;
 

@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const { app } = require('electron');
-const { turbineIzJSON } = require('./podatkiTurbine');
+const { turbineIzJSON } = require('./turbinesDb');
 
 const dbPath = path.join(app.getPath('userData'), 'vetrneElektrarne.db');
 // const dbPath = path.join(__dirname, 'vetrneElektrarne.db');

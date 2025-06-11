@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron');
-const { initDatabase } = require('../database/db');
+const { initDatabase } = require('../backend/database/db');
 const remoteMain = require('@electron/remote/main'); 
 const path = require('path');
 
@@ -9,8 +9,8 @@ app.whenReady().then(() => {
   initDatabase();
 });
 
-require('../backend/turbine');
-require('../backend/pdfPorocilo');
+require('../backend/electronHandlers');
+require('../backend/pdfReport');
 
 
 function createWindow() {

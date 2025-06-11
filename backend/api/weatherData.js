@@ -1,6 +1,6 @@
-const { db } = require('../../database/db');
+const { db } = require('../database/db');
 const geolib = require('geolib');
-const { fetchWeatherData } = require('./pridobi-veter');
+const { fetchWeatherData } = require('./api');
 
 
 async function findOrFetchWeatherData(latitude, longitude) {

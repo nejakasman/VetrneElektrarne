@@ -19,7 +19,7 @@ build/
 *.asar
 
 # SQLite DB datoteke
-database/turbines.json
+backend/database/turbines.json
 
 
 # Logi / začasne datoteke
@@ -36,3 +36,4 @@ yarn-error.log*
 *.sublime-workspace
 
 out/
+coverage/

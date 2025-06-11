@@ -103,8 +103,8 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     const stream = fs.createWriteStream(savePath);
     doc.pipe(stream);
 
-    const fontPath = path.join(__dirname, '../backend/fonts/Roboto-Regular.ttf');
-    const fontBoldPath = path.join(__dirname, '../backend/fonts/Roboto-Bold.ttf');
+    const fontPath = path.join(__dirname, '../src/assets/fonts/Roboto-Regular.ttf');
+    const fontBoldPath = path.join(__dirname, '../src/assets/fonts/Roboto-Bold.ttf');
     const fallbackFont = 'Helvetica';
 
     if (fs.existsSync(fontPath) && fs.existsSync(fontBoldPath)) {

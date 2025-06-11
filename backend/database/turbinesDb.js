@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 function turbineIzJSON(db) { 
-  const jsonPath = path.resolve(__dirname, '../database/turbines.json');
+  const jsonPath = path.resolve(__dirname, './turbines.json');
   const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
   db.serialize(() => {
