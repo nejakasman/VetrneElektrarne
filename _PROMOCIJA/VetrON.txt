@@ -1,0 +1,24 @@
+VetrON
+
+Namizna aplikacija za oceno letne proizvodnje električne energije vetrnih turbin na posamezni lokaciji.
+
+Leto izdelave: 2025
+
+Avtorji: Shevnin, Stepanyan, Kašman
+
+
+Vir podatkov: Open-Meteo API
+
+Koda: https://github.com/nejakasman/VetrneElektrarne.git
+
+Kategorizacija: namizna aplikacija
+
+Oznake: Open-Meteo, SQLite3, NodeJS, AgilenRazvoj, GitHub, Electron, JS, geolib, chart.js
+
+Opis projekta: Aplikacija VetrON je orodje za analizo vetrnega potenciala in podporo pri načrtovanju vetrnih elektrarn. S pomočjo API-ja Open-Meteo pridobiva podatke o hitrosti vetra za leto 2024 na višini 100 metrov. Uporabnikom omogoča izbiro geografskih točk za analizo in optimizacijo umeščanja vetrnih turbin, kar pomaga pri določanju najustreznejših mikrolokacij za maksimiranje energetskega izplena.
+
+Poleg izračuna predvidene letne proizvodnje električne energije aplikacija ponuja tudi vizualizacije rezultatov, ki olajšajo razumevanje. Uporabniki lahko rezultate analiz primerjajo med več različnimi turbinami na isti lokaciji, kar omogoča bolj informirane odločitve glede izbire ustrezne turbine.
+
+Aplikacija omogoča tudi upravljanje z evidenco turbin – dodajanje novih, urejanje obstoječih in brisanje tistih, ki niso več relevantne. Poleg tega aplikacija samostojno beleži zgodovino izračunov, kar omogoča ponovni ogled in primerjavo preteklih analiz.
+
+Za dodatno podporo odločanju lahko uporabnik generira PDF poročilo. Ta vključuje informacije o izbrani mikrolokaciji stojišča za vetrno turbino, hitrosti vetra, predvideni proizvodnji energije (prikazano po tednih in mesecih), ter specifikacije in značilnosti posamezne turbine. 
