@@ -25,7 +25,8 @@ function getTurbinePower(windSpeed, turbineData) {
     }
   }
 
-  return 0; 
+  console.log("!!!!No matching interval found for wind speed:", windSpeed);
+  return 0;
 }
 
 
