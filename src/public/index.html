@@ -43,6 +43,13 @@
           </select>
         </div>
         <button id="calculate-energy" class="btn btn-success w-100">Izračunaj potencial letne proizvodnje</button>
+
+        <!-- Dodajanje vnosa za uvoz csv datoteke -->
+        <br>
+        <div class ="mt-3">
+          <label for="weather-csv" class="form-label">Uvozi vremenske podatke (CSV):</label>
+          <input type="file" id="weather-csv" class="form-control" accept=".csv">
+          <small class="text-muted">Datoteka more vsebovati stolpce: datum, hitrost_vetra, visina, longtitude, latitude</small>
       </form>
       <div id="results" class="mt-3">
         <div id="loadingIndicator" class="loading-indicator" style="display: none;">
