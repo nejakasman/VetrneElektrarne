@@ -54,6 +54,21 @@ function initDatabase() {
       )
     `);
 
+    // Tabela za podatke iz CSV datotek
+    db.run(`
+      CREATE TABLE IF NOT EXISTS Veter_CSV (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        datum TEXT NOT NULL,
+        wind_speed REAL NOT NULL,
+        height INTEGER NOT NULL,
+        latitude REAL NOT NULL,
+        longitude REAL NOT NULL
+      )
+    `);
+
+
+    
+
     db.run(`
       CREATE TABLE IF NOT EXISTS Zgodovina_Izracunov (
        id INTEGER PRIMARY KEY AUTOINCREMENT,

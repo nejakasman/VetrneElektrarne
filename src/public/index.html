@@ -42,14 +42,22 @@
           <select id="turbine-type" name="turbine-type" class="form-select">
           </select>
         </div>
-        <button id="calculate-energy" class="btn btn-success w-100">Izračunaj potencial letne proizvodnje</button>
 
         <!-- Dodajanje vnosa za uvoz csv datoteke -->
         <br>
-        <div class ="mt-3">
+        <div class ="mb-3">
           <label for="weather-csv" class="form-label">Uvozi vremenske podatke (CSV):</label>
           <input type="file" id="weather-csv" class="form-control" accept=".csv">
-          <small class="text-muted">Datoteka more vsebovati stolpce: datum, hitrost_vetra, visina, longtitude, latitude</small>
+          <small class="text-muted">Datoteka more vsebovati stolpce: datetime, wind_speed, height, latitude, longitude</small>
+        </div>
+
+        <br>
+
+        <button id="calculate-energy" class="btn btn-success w-100">Izračunaj potencial letne proizvodnje</button>
+        <p id="data-source-indicator" class="mt-2 text-muted">
+            Uporabljeni podatki: API 🌐
+        </p>
+
       </form>
       <div id="results" class="mt-3">
         <div id="loadingIndicator" class="loading-indicator" style="display: none;">

@@ -41,21 +41,55 @@ ipcMain.handle('turbine-get-speeds', (event, { turbineName }) => {
   });
 });
 
-ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName }) => {
+ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName, useCSV }) => {
   try {
     const turbineData = await getTurbineSpeeds(turbineName);
-    // console.log("Podatki o turbini:", turbineData);
+    if (!turbineData || turbineData.speeds.length === 0)
+      throw new Error("Ni podatkov o turbini.");
 
-    if (!turbineData || turbineData.speeds.length === 0) throw new Error("Ni podatkov o turbini.");
+    let dataToUse = [];
+    let source = "api"; 
 
-    const { totalEnergy, weeklyEnergy, monthlyEnergy } = calculateAnnualEnergy(windData, turbineData);
+    if (useCSV) { //samo če uporabnik izbere CSV
+      const csvRows = await new Promise((resolve, reject) => {
+        db.all("SELECT * FROM Veter_CSV", [], (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        });
+      });
 
-    return { status: 'success', totalEnergy, weeklyEnergy, monthlyEnergy };
+      if (csvRows.length === 0) {
+        throw new Error("CSV tabela je prazna.");
+      }
+
+      console.log(`✅ Uporabljam ${csvRows.length} vrstic iz CSV datoteke.`);
+      dataToUse = csvRows.map(r => ({
+        wind_speed_100m: r.wind_speed,
+        datum: r.datum
+      }));
+
+      source = "csv";
+    } else {
+      console.log(`🌐 Uporabljam podatke iz API.`);
+      dataToUse = windData;
+    }
+
+    const { totalEnergy, weeklyEnergy, monthlyEnergy } =
+      calculateAnnualEnergy(dataToUse, turbineData);
+
+    return {
+      status: "success",
+      totalEnergy,
+      weeklyEnergy,
+      monthlyEnergy,
+      source
+    };
   } catch (error) {
-    console.error("Napaka pri izračunu letne energije:", error);
-    return { status: 'error', message: error.message };
+    console.error("❌ Napaka pri izračunu letne energije:", error);
+    return { status: "error", message: error.message };
   }
 });
+
 
 
 ipcMain.handle('save-calculation-history', async (event, data) => {
@@ -119,4 +153,30 @@ ipcMain.handle('get-calculation-history', async () => {
       }
     );
   });
+});
+
+//Logika za shranjevanje CSV
+ipcMain.handle("import-csv", async (event, csvData) => {
+  try {
+    const insert = db.prepare(`
+      INSERT INTO Veter_CSV (datum, wind_speed, height, latitude, longitude)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION");
+      for (const row of csvData) {
+        insert.run(row.datum, row.wind_speed, row.height, row.latitude, row.longitude);
+      }
+      db.run("COMMIT");
+    });
+
+    insert.finalize();
+    console.log(`✅ CSV uspešno uvožen (${csvData.length} vrstic).`);
+
+    return { status: "success", count: csvData.length };
+  } catch (error) {
+    console.error("❌ Napaka pri shranjevanju CSV:", error);
+    return { status: "error", message: error.message };
+  }
 });

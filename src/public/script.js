@@ -16,7 +16,11 @@ const windTurbineIcon = L.icon({
 
 let currentMarker = null;
 
+let csvModeActive = false;
+
 map.on('click', function (e) {
+  if (csvModeActive) return;
+
   const lat = e.latlng.lat.toFixed(6);
   const lon = e.latlng.lng.toFixed(6);
 
@@ -68,6 +72,8 @@ if (sidebar.style.transform.includes("translateX(0")) {
   sidebar.style.transform = "translateX(0)";
 }
 });
+
+let csvData = [];
 
 document.addEventListener("DOMContentLoaded", () => {
   const { ipcRenderer } = require('electron');
@@ -289,6 +295,8 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
   try {
     showLoading();
+    
+    //Zahteva za vremenske podatke (iz API ali CSV)
     const windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon });
 
     if (windResult.status === "success" && windResult.data.length > 0) {
@@ -301,13 +309,14 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
         showAlert("Izbrana turbina ni na voljo.");
         return;
       }
-
       const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
         windData: windResult.data,
         turbineName: selectedTurbineName,
+        useCSV: useCSVData // pošiljam stanje
       });
 
       hideLoading();
+
       if (energyResult.status === "success") {
         firstTurbineData = {
           name: selectedTurbineName,
@@ -387,8 +396,9 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
   try {
     const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
-      windData: windDataCache,
+      windData: useCSVData ? csvData : windResult.data, //samo sveži podatki (trenutno ne deluje)
       turbineName: compareTurbineName,
+      useCSV: useCSVData
     });
 
     if (energyResult.status === "success") {
@@ -611,6 +621,132 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
     showAlert('Napaka pri generiranju PDF: ' + error.message);
 }
 });
+
+// logika za uvoz csv datoteke
+    let useCSVData = false;
+    const csvInput = document.getElementById("weather-csv");
+
+    const removeCsvBtn = document.createElement("button");
+    removeCsvBtn.type = "button";
+    removeCsvBtn.className = "btn btn-sm btn-warning mt-2";
+    removeCsvBtn.textContent = "Odstrani CSV";
+    removeCsvBtn.style.display = "none"; // skrito dokler ni CSV
+    csvInput.parentNode.appendChild(removeCsvBtn);
+
+
+if (csvInput) {
+  
+  csvInput.addEventListener("change", (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    useCSVData = true;
+    csvModeActive = true;
+
+    removeCsvBtn.style.display = "inline-block";
+
+    
+
+    // Posodobljanje indikatorja na CSV
+    const sourceIndicator = document.getElementById("data-source-indicator");
+    if (sourceIndicator) {
+      sourceIndicator.textContent = "Uporabljeni podatki: CSV datoteka 📄";
+      sourceIndicator.className = "text-success";
+  }
+    console.log("✅ Izbrana datoteka:", file.name);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      console.log("📄 Vsebina CSV:");
+      console.log(text);
+
+      const lines = text.trim().split("\n");
+      const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+      console.log("🧾 Stolpci:", headers);
+
+      // Preverjanje za CSV strukturo
+      const requiredHeaders = ["datum", "wind_speed", "height", "latitude", "longitude"];
+      const missing = requiredHeaders.filter(h => !headers.includes(h));
+
+      if (missing.length > 0) {
+        alert(`⚠️ CSV datoteka ni pravilne oblike.\nManjkajo stolpci: ${missing.join(", ")}`);
+        console.error("❌ Napačna struktura CSV:", headers);
+        return;
+      }
+
+      console.log("✅ CSV struktura pravilna:", headers);
+
+      // vzorec podatkov iz CSV za pregled
+      const sample = lines.slice(1, 6).map(line => line.split(","));
+      console.table(sample);
+
+      alert("✅ CSV datoteka uspešno prebrana in pravilne strukture!");
+
+
+      // Logika za shranjevanje CSV v bazo:
+      const csvData = lines.slice(1).map(line => {
+      const values = line.split(",");
+  return {
+    datum: values[headers.indexOf("datum")],
+    wind_speed: parseFloat(values[headers.indexOf("wind_speed")]),
+    height: parseInt(values[headers.indexOf("height")]),
+    latitude: parseFloat(values[headers.indexOf("latitude")]),
+    longitude: parseFloat(values[headers.indexOf("longitude")])
+  };
+
+    
+});
+
+    document.getElementById('latitude').disabled = true;
+    document.getElementById('longitude').disabled = true;
+
+    //Prikaz zastavice na zemljevidu za prvo koordinato CSV
+      if (currentMarker) map.removeLayer(currentMarker);
+      const firstLat = csvData[0].latitude;
+      const firstLon = csvData[0].longitude;
+
+      document.getElementById('latitude').value = firstLat;
+      document.getElementById('longitude').value = firstLon;
+
+      currentMarker = L.marker([firstLat, firstLon], { icon: windTurbineIcon })
+        .addTo(map)
+        .bindPopup("Lokacija iz CSV")
+        .openPopup();
+      map.setView([firstLat, firstLon], 10);
+
+      ipcRenderer.invoke("import-csv", csvData)
+        .then(result => {
+          if (result.status === "success") {
+            alert(`✅ CSV uspešno uvožen (${result.count} vrstic).`);
+          } else {
+      alert(`❌ Napaka pri uvozu CSV: ${result.message}`);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert("❌ Napaka pri komunikaciji z bazo.");
+  });
+    };
+    reader.readAsText(file);
+  });
+   // odtranitev CSV datoteke
+  removeCsvBtn.addEventListener("click", () => {
+    csvInput.value = "";
+    useCSVData = false;  // vrnemo na API
+    csvModeActive = false;
+    removeCsvBtn.style.display = "none"; 
+    document.getElementById('latitude').disabled = false;
+    document.getElementById('longitude').disabled = false;
+
+    //indikator nazaj na API
+    const sourceIndicator = document.getElementById("data-source-indicator");
+    if (sourceIndicator) {
+      sourceIndicator.textContent = "Uporabljeni podatki: API 🌐";
+      sourceIndicator.className = "text-primary";
+    }
+  });
+}
+
 });
 
 // Povezava na internet

@@ -38,6 +38,7 @@
     "@electron/remote": "^2.1.2",
     "chart.js": "^4.4.9",
     "chartjs-node-canvas": "^5.0.0",
+    "csv-writer": "^1.6.0",
     "electron-squirrel-startup": "^1.0.1",
     "geolib": "^3.3.4",
     "node-fetch": "^2.7.0",
