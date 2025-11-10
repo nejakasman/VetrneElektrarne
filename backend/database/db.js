@@ -62,7 +62,8 @@ function initDatabase() {
         wind_speed REAL NOT NULL,
         height INTEGER NOT NULL,
         latitude REAL NOT NULL,
-        longitude REAL NOT NULL
+        longitude REAL NOT NULL,
+        batch_id TEXT NOT NULL
       )
     `);
 

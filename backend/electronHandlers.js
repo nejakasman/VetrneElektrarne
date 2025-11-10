@@ -1,3 +1,4 @@
+const { randomUUID } = require("crypto");
 const { db } = require('./database/db');
 
 const { ipcMain } = require('electron');
@@ -52,7 +53,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
 
     if (useCSV) { //samo če uporabnik izbere CSV
       const csvRows = await new Promise((resolve, reject) => {
-        db.all("SELECT * FROM Veter_CSV", [], (err, rows) => {
+        db.all("SELECT * FROM Veter_CSV WHERE batch_id = (SELECT batch_id FROM Veter_CSV ORDER BY id DESC LIMIT 1)", [], (err, rows) => {
           if (err) reject(err);
           else resolve(rows);
         });
@@ -158,23 +159,26 @@ ipcMain.handle('get-calculation-history', async () => {
 //Logika za shranjevanje CSV
 ipcMain.handle("import-csv", async (event, csvData) => {
   try {
+
+    const batch_id = randomUUID(); //generiraj id serije
+
     const insert = db.prepare(`
-      INSERT INTO Veter_CSV (datum, wind_speed, height, latitude, longitude)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO Veter_CSV (datum, wind_speed, height, latitude, longitude, batch_id)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
 
     db.serialize(() => {
       db.run("BEGIN TRANSACTION");
       for (const row of csvData) {
-        insert.run(row.datum, row.wind_speed, row.height, row.latitude, row.longitude);
+        insert.run(row.datum, row.wind_speed, row.height, row.latitude, row.longitude, batch_id);
       }
       db.run("COMMIT");
     });
 
     insert.finalize();
-    console.log(`✅ CSV uspešno uvožen (${csvData.length} vrstic).`);
+    console.log(`✅ CSV uspešno uvožen (${csvData.length} vrstic) - batch_id: ${batch_id}`);
 
-    return { status: "success", count: csvData.length };
+    return { status: "success", count: csvData.length, batch_id };
   } catch (error) {
     console.error("❌ Napaka pri shranjevanju CSV:", error);
     return { status: "error", message: error.message };
