@@ -23,6 +23,11 @@ body, html {
     background-color: #F8F8FF !important;
 }
 
+#sidebar {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .nav-link {
     font-weight: bold;
 }
@@ -92,9 +97,10 @@ form {
   flex-direction: column;
   gap: 0.5rem;
   align-items: center;
-  max-height: 100vh;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  padding-bottom: 1rem;
   text-align: center;
-
 }
 
 #compared-turbines-container {
