@@ -32,10 +32,29 @@ ipcMain.handle('export-turbines', async (event, { filePath } = {}) => {
 });
 
 
-ipcMain.handle('weather-fetch', async (event, { latitude, longitude }) => {
+
+ipcMain.handle('weather-fetch', async (event, { latitude, longitude, provider, saveRawPath } = {}) => {
   try {
-    const { measurements, lokacija_id } = await findOrFetchWeatherData(latitude, longitude);
-    return { status: 'success', data: measurements, lokacija_id };
+    // Če je podan ponudnik, ka uporabimo. findOrFetchWeatherData default open-meteo.
+  // if caller requested saving raw provider data, force a fresh fetch so we have the original raw response
+  const forceFetch = Boolean(saveRawPath);
+  const { measurements, lokacija_id, provider: usedProvider, height: usedHeight, raw } = await findOrFetchWeatherData(latitude, longitude, provider, undefined, forceFetch);
+
+    // If caller requested saving the raw provider response, write it to disk here
+    if (saveRawPath && raw) {
+      try {
+        const dir = path.dirname(saveRawPath);
+        try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* ignore */ }
+        fs.writeFileSync(saveRawPath, JSON.stringify(raw, null, 2), 'utf8');
+        console.log('Saved raw provider data to', saveRawPath);
+      } catch (e) {
+        console.warn('Failed to save raw provider data to', saveRawPath, e.message);
+        // don't fail the whole fetch because of inability to save; return a warning
+        return { status: 'success', data: measurements, lokacija_id, provider: usedProvider, height: usedHeight, warn: `Failed to save raw data: ${e.message}` };
+      }
+    }
+
+    return { status: 'success', data: measurements, lokacija_id, provider: usedProvider, height: usedHeight };
   } catch (err) {
     console.error('Napaka v weather-fetch:', err);
     return { status: 'error', message: err.message };

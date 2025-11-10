@@ -296,6 +296,8 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
   const lat = parseFloat(document.getElementById("latitude").value);
   const lon = parseFloat(document.getElementById("longitude").value);
   const selectedTurbineName = turbineDropdown.value;
+  const saveRawChecked = document.getElementById('save-raw-checkbox') && document.getElementById('save-raw-checkbox').checked;
+  let saveRawPath = null;
 
   if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
     showAlert("Prosim, vnesite veljavne koordinate.");
@@ -309,6 +311,7 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
 
   try {
+// če uporabnik želi surove podatke o vetru, prvo prompt za izbiro lokacije shranjevanja
   if (saveRawChecked) {
     if (useCSVData) {
       showAlert('Ne morete shraniti surovih podatkov iz CSV. Odznačite "Shrani surove podatke" ali odstranite CSV.');
@@ -322,7 +325,6 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
     });
 
     if (canceled || !filePath) {
-      // user cancelled; abort calculation
       return;
     }
 
