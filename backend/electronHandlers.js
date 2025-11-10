@@ -2,6 +2,8 @@ const { randomUUID } = require("crypto");
 const { db } = require('./database/db');
 
 const { ipcMain } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
 const { findOrFetchWeatherData } = require('./api/weatherData');
 const { getTurbineSpeeds } = require('./getTurbineSpeeds');
@@ -13,6 +15,21 @@ ipcMain.handle('turbine-read-all', () => readAllTurbines());
 ipcMain.handle('turbine-update', (event, updatedTurbine) => updateTurbine(updatedTurbine));
 ipcMain.handle('turbine-delete', (event, name) => deleteTurbine(name));
 
+// izvoz podatkov o turbinah v JSON datoteko
+ipcMain.handle('export-turbines', async (event, { filePath } = {}) => {
+  try {
+    if (!filePath) throw new Error('Ni podane poti za shranjevanje.');
+    const turbines = await readAllTurbines();
+    const dir = path.dirname(filePath);
+    try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* ignore */ }
+    fs.writeFileSync(filePath, JSON.stringify(turbines, null, 2), 'utf8');
+    console.log('turbine izvožene:', filePath);
+    return { status: 'success', filePath };
+  } catch (err) {
+    console.error('Napaka pri izvozu turbin:', err);
+    return { status: 'error', message: err.message };
+  }
+});
 
 
 ipcMain.handle('weather-fetch', async (event, { latitude, longitude }) => {

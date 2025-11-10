@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const { ipcRenderer } = require('electron');
+  const { dialog } = require('@electron/remote');
   const form = document.getElementById("turbina-form");
 
   function naloziTurbine() {
@@ -192,4 +193,30 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   naloziTurbine();
+
+  // izvoz podatkov o turbinah v json
+  const exportBtn = document.getElementById('export-turbines-btn');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async () => {
+      try {
+        const { filePath, canceled } = await dialog.showSaveDialog({
+          title: 'Izvozi podatke o shranjenih turbinah',
+          defaultPath: 'turbine.json',
+          filters: [{ name: 'JSON', extensions: ['json'] }]
+        });
+
+        if (canceled || !filePath) return;
+
+        const result = await ipcRenderer.invoke('export-turbines', { filePath });
+        if (result && result.status === 'success') {
+          alert('Podatki o turbinah so bili izvoženi: ' + result.filePath);
+        } else {
+          alert('Napaka pri izvozu podatkov o turbinah: ' + (result && result.message ? result.message : 'Neznana napaka'));
+        }
+      } catch (err) {
+        console.error('Napaka pri izvozu turbin:', err);
+        alert('Napaka pri izvozu turbin: ' + err.message);
+      }
+    });
+  }
 });
