@@ -40,7 +40,7 @@ const calculateAnnualEnergy = (windData, turbineData) => {
   let dayOfMonth = 0;
 
   for (let i = 0; i < windData.length; i++) {
-    const windSpeed = Number(windData[i].wind_speed_100m);
+    const windSpeed = Number(windData[i].wind_speed);
     const power = getTurbinePower(windSpeed, turbineData);
 
     // console.log(`Hour ${i + 1}: Wind Speed = ${windSpeed} m/s, Turbine Power = ${power} kW`);

@@ -78,6 +78,7 @@ let csvData = [];
 document.addEventListener("DOMContentLoaded", () => {
   const { ipcRenderer } = require('electron');
   const turbineDropdown = document.getElementById("turbine-type");
+  const providerSelect = document.getElementById("provider-select");
   const compareTurbineDropdown = document.getElementById("compare-turbine-type");
   const resultSidebar = document.getElementById("result-sidebar");
   const toggleBtn = document.getElementById("toggle-result-sidebar");
@@ -113,6 +114,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   naloziDropdown();
+
+  // inicializacija ponudnika izbira iz localStorage 
+  try {
+    const saved = localStorage.getItem('weather_provider');
+    if (providerSelect && saved) providerSelect.value = saved;
+  } catch (e) {
+    console.warn('Ni bilo možno razbrati ponudnika iz localStorage:', e.message);
+  }
+
+  if (providerSelect) {
+    providerSelect.addEventListener('change', () => {
+      try { localStorage.setItem('weather_provider', providerSelect.value); } catch (e) { /* ignore */ }
+    });
+  }
 
   //gumb za preklop med grafi
   // const toggleButtonPlugin = {
@@ -294,10 +309,30 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
 
   try {
-    showLoading();
-    
-    //Zahteva za vremenske podatke (iz API ali CSV)
-    const windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon });
+  if (saveRawChecked) {
+    if (useCSVData) {
+      showAlert('Ne morete shraniti surovih podatkov iz CSV. Odznačite "Shrani surove podatke" ali odstranite CSV.');
+      return;
+    }
+
+    const { filePath, canceled } = await dialog.showSaveDialog({
+      title: 'Shrani surove podatke o vetru (JSON)',
+      defaultPath: 'surovi_veterni_podatki.json',
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+
+    if (canceled || !filePath) {
+      // user cancelled; abort calculation
+      return;
+    }
+
+    saveRawPath = filePath;
+  }
+
+  showLoading();
+  // preberemo izbranega ponudnika in ga posredujemo backendu
+  const provider = (document.getElementById('provider-select') && document.getElementById('provider-select').value) || undefined;
+  const windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon, provider, saveRawPath });
 
     if (windResult.status === "success" && windResult.data.length > 0) {
       windDataCache = windResult.data;
@@ -327,11 +362,14 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
           monthlyEnergy: energyResult.monthlyEnergy
       };
 
-      // Posodobitev prikaza
-      document.getElementById("result-turbine-name").textContent = selectedTurbineName;
-      document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000000).toFixed(2);
-
-
+  // Posodobitev prikaza
+  document.getElementById("result-turbine-name").textContent = selectedTurbineName;
+  document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000000).toFixed(2);
+  // prikaži uporabljenega ponudnika
+  const providerLabel = windResult.provider || provider;
+  const providerElem = document.getElementById('result-provider');
+  const displayHeight = (typeof windResult.height !== 'undefined' && windResult.height !== null) ? windResult.height : null;
+  if (providerElem) providerElem.textContent = providerLabel + (displayHeight ? ` (${displayHeight} m)` : '');
       const compareNameElem = document.getElementById("result-compare-turbine-name");
       const compareEnergyElem = document.getElementById("result-compare-annual-energy");
       if (compareNameElem && compareEnergyElem) {
@@ -350,12 +388,14 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
       updateChart(energyData, selectedTurbineName);
 
       await ipcRenderer.invoke("save-calculation-history", {
-        lokacija_id: windResult.lokacija_id, 
+        lokacija_id: windResult.lokacija_id,
         turbineName: selectedTurbineName,
         annualEnergy: energyResult.totalEnergy,
         weeklyEnergy: energyResult.weeklyEnergy,
         monthlyEnergy: energyResult.monthlyEnergy,
-        windData: windDataCache
+        windData: windDataCache,
+        provider: windResult.provider || provider,
+        height: windResult.height || null
       });
       await loadCalculationHistory();
 
@@ -396,9 +436,10 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
   try {
     const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
-      windData: useCSVData ? csvData : windResult.data, //samo sveži podatki (trenutno ne deluje)
+      windData: windDataCache,
+     // windData: useCSVData ? csvData : windResult.data, //samo sveži podatki (trenutno ne deluje)
       turbineName: compareTurbineName,
-      useCSV: useCSVData
+     // useCSV: useCSVData
     });
 
     if (energyResult.status === "success") {
@@ -494,7 +535,8 @@ async function loadCalculationHistory() {
        timeZone: 'Europe/Ljubljana'
      });
 
-     option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${localTimeString}`;
+  const provLabel = item.provider ? `${item.provider}${item.height_m ? ` (${item.height_m} m)` : ''}` : 'open-meteo';
+  option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${localTimeString} [${provLabel}]`;
      option.dataset.data = JSON.stringify(item);
      historyList.appendChild(option);
    });
@@ -536,6 +578,8 @@ loadHistoryBtn.addEventListener("click", () => {
   // posodobitev v sidebaru
   document.getElementById("result-turbine-name").textContent = item.turbine_name;
   document.getElementById("result-annual-energy").textContent = (firstTurbineData.totalEnergy / 1000000).toFixed(2);
+  const providerElem = document.getElementById('result-provider');
+  if (providerElem) providerElem.textContent = item.provider ? `${item.provider}${item.height_m ? ` (${item.height_m} m)` : ''}` : 'open-meteo';
 
   // Pinpoint na zemljevidu
   if (currentMarker) {

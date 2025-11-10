@@ -10,8 +10,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.error('Napaka pri povezavi z bazo:', err.message);
     } else {
         console.log('Povezan z SQLite bazo.');
+        console.log('Lokalna pot do baze:', dbPath);
     }
 });
+
 
 
 function initDatabase() {
@@ -31,10 +33,16 @@ function initDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         datum TEXT NOT NULL,
         lokacija_id INTEGER NOT NULL,
-        wind_speed_10m DECIMAL(5,2),
-        wind_speed_100m DECIMAL(5,2),
+        wind_speed DECIMAL(5,2),
+        height_m INTEGER,
+        provider TEXT NOT NULL,
         FOREIGN KEY (lokacija_id) REFERENCES Lokacija(id) ON DELETE CASCADE
       )
+    `);
+    
+    db.run(`
+      CREATE UNIQUE INDEX IF NOT EXISTS veter_loc_date_provider_height
+      ON Veter (lokacija_id, datum, provider, height_m)
     `);
 
     db.run(`
@@ -79,7 +87,9 @@ function initDatabase() {
         tedenska_energija TEXT,
         mesecna_energija TEXT,
         wind_data TEXT,
+        height_m INTEGER,
         datum DATETIME DEFAULT CURRENT_TIMESTAMP,
+        provider TEXT,
         FOREIGN KEY (lokacija_id) REFERENCES Lokacija(id) ON DELETE CASCADE,
         FOREIGN KEY (turbine_id) REFERENCES Turbine(id) ON DELETE CASCADE
       )
