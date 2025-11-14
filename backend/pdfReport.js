@@ -81,7 +81,7 @@ function calculateMonthlyWindStats(windData) {
   windData.forEach(data => {
     const date = new Date(data.datetime);
     const month = date.getMonth();
-    monthlyData[month].speeds.push(data.wind_speed_100m);
+    monthlyData[month].speeds.push(data.wind_speed);
   });
 
   return monthlyData.map((monthData, index) => {
@@ -96,7 +96,7 @@ function calculateMonthlyWindStats(windData) {
   });
 }
 
-ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windData, energyResults, filePath }) => {
+ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windData, energyResults, filePath, provider, height_m }) => {
   try {
     const savePath = filePath || path.join(__dirname, '../pdf-porocilo.pdf');
     const doc = new PDFDocument({ autoFirstPage: false, margin: 40 });
@@ -138,6 +138,8 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
          width: doc.page.width - 60
        });
 
+      const providerText = provider || 'neznan ponudnik';
+      const heightText = (typeof height_m !== 'undefined' && height_m !== null) ? `${height_m} m` : 'neznana višina';
     //Prva stran: naslov, uvod, podatki o lokaciji in zemljevid
     doc.addPage({ size: 'A4' });
     doc.rect(0, 0, doc.page.width, doc.page.height).fill('white');
@@ -148,7 +150,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     doc.fontSize(14).text(`Datum: ${new Date().toLocaleString('sl-SI', { day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`);
     doc.moveDown();
     doc.fontSize(12).font('Roboto')
-    doc.text('Ta dokument predstavlja informativni izračun letne proizvodnje električne energije iz vetra za izbrano lokacijo in tip vetrne turbine. Pri izračunu so uporabljeni javno dostopni meteorološki podatki o hitrosti vetra za leto 2024, zbrani na višini 100 metrov. Na podlagi urnih vrednosti vetra in tehničnih karakteristik izbrane turbine je izvedena preliminarna ocena energetskega izplena. Dokument vključuje podatke o lokaciji, vetrovne razmere, lastnosti turbine ter izračunano proizvodnjo, s čimer nudi celovit vpogled v vetrni potencial konkretne mikrolokacije.', 40, doc.y, { align: 'left', width: doc.page.width - 80 });
+    doc.text('Ta dokument predstavlja informativni izračun letne proizvodnje električne energije iz vetra za izbrano lokacijo in tip vetrne turbine. Pri izračunu so uporabljeni javno dostopni meteorološki podatki o hitrosti vetra za leto 2024. Na podlagi urnih vrednosti vetra in tehničnih karakteristik izbrane turbine je izvedena preliminarna ocena energetskega izplena. Dokument vključuje podatke o lokaciji, vetrovne razmere, lastnosti turbine ter izračunano proizvodnjo, s čimer nudi celovit vpogled v vetrni potencial konkretne mikrolokacije.', 40, doc.y, { align: 'left', width: doc.page.width - 80 });
     doc.moveDown(5);
 
     doc.text(`Koordinate: ${location.latitude}, ${location.longitude}`, 40, doc.y);
@@ -175,7 +177,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
       .text('Analiza hitrosti vetra', 40, 50);
     doc.moveTo(40, 70).lineTo(doc.page.width - 40, 70).lineWidth(1).stroke('#000000');
     doc.fontSize(12).font(fs.existsSync(fontPath) ? 'Roboto' : 'Helvetica')
-      .text('Spodnja tabela in graf prikazujeta povprečne, maksimalne in minimalne mesečne vrednosti hitrosti vetra na višini 100 metrov.', 40, 80, { width: doc.page.width - 80 });
+      .text(`Spodnja tabela in graf prikazujeta povprečne, maksimalne in minimalne mesečne vrednosti hitrosti vetra na višini ${heightText} od ponudnika: ${providerText}.`, 40, 80, { width: doc.page.width - 80 });
 
     const monthlyWindStats = calculateMonthlyWindStats(windData);
     const tableX = 100;

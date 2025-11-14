@@ -35,21 +35,19 @@ ipcMain.handle('export-turbines', async (event, { filePath } = {}) => {
 
 ipcMain.handle('weather-fetch', async (event, { latitude, longitude, provider, saveRawPath } = {}) => {
   try {
-    // Če je podan ponudnik, ka uporabimo. findOrFetchWeatherData default open-meteo.
-  // if caller requested saving raw provider data, force a fresh fetch so we have the original raw response
+    // Če je podan ponudnik, ga uporabimo. Če odkljukano shrani surove podatke o vetru force-fetchamo.
   const forceFetch = Boolean(saveRawPath);
   const { measurements, lokacija_id, provider: usedProvider, height: usedHeight, raw } = await findOrFetchWeatherData(latitude, longitude, provider, undefined, forceFetch);
 
-    // If caller requested saving the raw provider response, write it to disk here
     if (saveRawPath && raw) {
       try {
         const dir = path.dirname(saveRawPath);
         try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* ignore */ }
         fs.writeFileSync(saveRawPath, JSON.stringify(raw, null, 2), 'utf8');
-        console.log('Saved raw provider data to', saveRawPath);
+        console.log('Shranjeni surovi podatki od ponudnika: ', saveRawPath);
       } catch (e) {
-        console.warn('Failed to save raw provider data to', saveRawPath, e.message);
-        // don't fail the whole fetch because of inability to save; return a warning
+        console.warn('Ni uspelo shraniti surovih podatkov od ponudnika: ', saveRawPath, e.message);
+        // v primeru ne uspeha vrnemo opozorilo
         return { status: 'success', data: measurements, lokacija_id, provider: usedProvider, height: usedHeight, warn: `Failed to save raw data: ${e.message}` };
       }
     }
@@ -99,7 +97,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
         throw new Error("CSV tabela je prazna.");
       }
 
-      console.log(`✅ Uporabljam ${csvRows.length} vrstic iz CSV datoteke.`);
+      console.log(`Uporabljam ${csvRows.length} vrstic iz CSV datoteke.`);
       dataToUse = csvRows.map(r => ({
         wind_speed_100m: r.wind_speed,
         datum: r.datum
@@ -107,7 +105,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
 
       source = "csv";
     } else {
-      console.log(`🌐 Uporabljam podatke iz API.`);
+      console.log(`Uporabljam podatke iz API.`);
       dataToUse = windData;
     }
 
@@ -122,7 +120,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
       source
     };
   } catch (error) {
-    console.error("❌ Napaka pri izračunu letne energije:", error);
+    console.error("Napaka pri izračunu letne energije:", error);
     return { status: "error", message: error.message };
   }
 });
