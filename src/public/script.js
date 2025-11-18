@@ -84,15 +84,48 @@ document.addEventListener("DOMContentLoaded", () => {
   const toggleBtn = document.getElementById("toggle-result-sidebar");
   const historyList = document.getElementById("history-list");
   const loadHistoryBtn = document.getElementById("load-history-btn");
+  const saveRawCheckbox = document.getElementById("save-raw-checkbox");
+  const formatContainer = document.getElementById("raw-format-buttons");
+  const jsonBtn = document.getElementById("format-json");
+  const csvBtn = document.getElementById("format-csv");
 
   let chartInstance = null;
   let firstTurbineData = null;
   let compareTurbineData = null;
   let windDataCache = null;
   let chartType = 'weekly';
-
   let comparedTurbines = []; // za več turbin za primerjavo
+  let exportJSON = false;
+  let exportCSV = false;
 
+// gumba za izbiro formata surovih podatkov
+  saveRawCheckbox.addEventListener("change", () => {
+  if (saveRawCheckbox.checked) {
+    formatContainer.classList.remove("hidden-buttons");
+    formatContainer.classList.add("show-buttons");
+  } else {
+    formatContainer.classList.remove("show-buttons");
+    formatContainer.classList.add("hidden-buttons");
+
+    exportJSON = false;
+    exportCSV = false;
+    jsonBtn.classList.remove("active");
+    csvBtn.classList.remove("active");
+  }
+});
+
+
+// Toggle logika
+jsonBtn.addEventListener("click", () => {
+  exportJSON = !exportJSON;
+  jsonBtn.classList.toggle("active");
+});
+
+csvBtn.addEventListener("click", () => {
+  exportCSV = !exportCSV;
+  csvBtn.classList.toggle("active");
+});
+  
 
   //dropdown meni - turbine
   async function naloziDropdown() {
@@ -114,7 +147,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   naloziDropdown();
-
   // inicializacija ponudnika izbira iz localStorage 
   try {
     const saved = localStorage.getItem('weather_provider');
@@ -128,39 +160,6 @@ document.addEventListener("DOMContentLoaded", () => {
       try { localStorage.setItem('weather_provider', providerSelect.value); } catch (e) { /* ignore */ }
     });
   }
-
-  //gumb za preklop med grafi
-  // const toggleButtonPlugin = {
-  //   id: 'toggleButton',
-  //   afterDraw(chart) {
-  //     const { ctx, chartArea } = chart;
-  //     const isWeekly = chartType === 'weekly';
-  //     const buttonText = isWeekly ? 'Pojdi na mesečni graf' : 'Pojdi na tedenski graf';
-  //     const buttonWidth = 120;
-  //     const buttonHeight = 20;
-  //     const padding = 8;
-
-  //     const x = chart.width - buttonWidth - padding;
-  //     const y = padding;
-
-  //     ctx.fillStyle = '#4BC0C0';
-  //     ctx.fillRect(x, y, buttonWidth, buttonHeight);
-
-  //     ctx.strokeStyle = '#2A6A6A';
-  //     ctx.lineWidth = 1;
-  //     ctx.strokeRect(x, y, buttonWidth, buttonHeight);
-
-  //     ctx.fillStyle = '#FFFFFF';
-  //     ctx.font = '11px Arial';
-  //     ctx.textAlign = 'center';
-  //     ctx.textBaseline = 'middle';
-  //     ctx.fillText(buttonText, x + buttonWidth / 2, y + buttonHeight / 2);
-
-  //     chart.toggleButton = { x, y, width: buttonWidth, height: buttonHeight };
-  //   }
-  // };
-
-  // Chart.register(toggleButtonPlugin);
 
   const toggleChartTypeBtn = document.getElementById('toggle-chart-type-btn');
 if (toggleChartTypeBtn) {
@@ -297,7 +296,8 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
   const lon = parseFloat(document.getElementById("longitude").value);
   const selectedTurbineName = turbineDropdown.value;
   const saveRawChecked = document.getElementById('save-raw-checkbox') && document.getElementById('save-raw-checkbox').checked;
-  let saveRawPath = null;
+  let saveJsonPath = null;
+  let saveCsvPath = null;
 
   if (isNaN(lat) || isNaN(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
     showAlert("Prosim, vnesite veljavne koordinate.");
@@ -318,19 +318,34 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
       return;
     }
 
-    const { filePath, canceled } = await dialog.showSaveDialog({
-      title: 'Shrani surove podatke o vetru (JSON)',
-      defaultPath: 'surovi_veterni_podatki.json',
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    });
-
-    if (canceled || !filePath) {
-      return;
-    }
-
-    saveRawPath = filePath;
+    if (!exportJSON && !exportCSV) {
+    showAlert("Izberite vsaj en format (JSON ali CSV).");
+    return;
   }
 
+  // JSON dialog
+  if (exportJSON) {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: "Shrani surove podatke (JSON)",
+      defaultPath: "surovi_veter.json",
+      filters: [{ name: "JSON", extensions: ["json"] }]
+    });
+    if (canceled) return;
+    saveJsonPath = filePath;
+  }
+
+  // CSV dialog
+  if (exportCSV) {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: "Shrani surove podatke (CSV)",
+      defaultPath: "surovi_veter.csv",
+      filters: [{ name: "CSV", extensions: ["csv"] }]
+    });
+    if (canceled) return;
+    saveCsvPath = filePath;
+    console.log('CSV path selected:', saveCsvPath);
+  }
+  }
   showLoading();
     let windResult;
 
@@ -339,7 +354,7 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
       windResult = await ipcRenderer.invoke("weather-fetch-csv", { latitude: lat, longitude: lon });
     } else {
     const provider = (document.getElementById('provider-select') && document.getElementById('provider-select').value) || undefined;
-      windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon, provider, saveRawPath });
+      windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon, provider, saveJsonPath, saveCsvPath });
     }
 
 
@@ -378,6 +393,7 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
   // Posodobitev prikaza
   document.getElementById("result-turbine-name").textContent = selectedTurbineName;
   document.getElementById("result-annual-energy").textContent = (energyResult.totalEnergy / 1000000).toFixed(2);
+  
   // prikaži uporabljenega ponudnika
   const providerLabel = windResult.provider || provider;
   const providerElem = document.getElementById('result-provider');

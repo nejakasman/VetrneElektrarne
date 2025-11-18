@@ -219,4 +219,31 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // izvoz podatkov o turbinah v csv
+  const exportCsvBtn = document.getElementById('export-turbines-csv-btn');
+if (exportCsvBtn) {
+  exportCsvBtn.addEventListener('click', async () => {
+    try {
+      const { filePath, canceled } = await dialog.showSaveDialog({
+        title: 'Izvozi podatke o shranjenih turbinah kot CSV',
+        defaultPath: 'turbine.csv',
+        filters: [{ name: 'CSV', extensions: ['csv'] }]
+      });
+
+      if (canceled || !filePath) return;
+
+      const result = await ipcRenderer.invoke('export-turbines-csv', { filePath });
+      if (result && result.status === 'success') {
+        alert('Podatki o turbinah so bili izvoženi v CSV: ' + result.filePath);
+      } else {
+        alert('Napaka pri izvozu turbin v CSV: ' + (result && result.message ? result.message : 'Neznana napaka'));
+      }
+    } catch (err) {
+      console.error('Napaka pri izvozu turbin v CSV:', err);
+      alert('Napaka pri izvozu turbin v CSV: ' + err.message);
+    }
+  });
+}
+
 });

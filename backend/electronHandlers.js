@@ -31,37 +31,122 @@ ipcMain.handle('export-turbines', async (event, { filePath } = {}) => {
   }
 });
 
-
-
-ipcMain.handle('weather-fetch', async (event, { latitude, longitude, provider, saveRawPath } = {}) => {
+// izvoz podatkov o turbinah v CSV datoteko
+ipcMain.handle('export-turbines-csv', async (event, { filePath } = {}) => {
   try {
-    // Če je podan ponudnik, ka uporabimo. findOrFetchWeatherData default open-meteo.
-  // if caller requested saving raw provider data, force a fresh fetch so we have the original raw response
-  const forceFetch = Boolean(saveRawPath);
-  const { measurements, lokacija_id, provider: usedProvider, height: usedHeight, raw } = await findOrFetchWeatherData(latitude, longitude, provider, undefined, forceFetch);
+    if (!filePath) throw new Error("Ni podane poti za shranjevanje.");
 
-    // If caller requested saving the raw provider response, write it to disk here
-    if (saveRawPath && raw) {
-      try {
-        const dir = path.dirname(saveRawPath);
-        try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { /* ignore */ }
-        fs.writeFileSync(saveRawPath, JSON.stringify(raw, null, 2), 'utf8');
-        console.log('Saved raw provider data to', saveRawPath);
-      } catch (e) {
-        console.warn('Failed to save raw provider data to', saveRawPath, e.message);
-        // don't fail the whole fetch because of inability to save; return a warning
-        return { status: 'success', data: measurements, lokacija_id, provider: usedProvider, height: usedHeight, warn: `Failed to save raw data: ${e.message}` };
+    const turbines = await readAllTurbines();
+    const dir = path.dirname(filePath);
+    fs.mkdirSync(dir, { recursive: true });
+
+    // CSV header 
+    let csv = "turbine_name;speed;power\n";
+
+    for (const t of turbines) {
+      const name = t.name.replace(/"/g, '""'); // podvoji " v imenu
+      const nameEscaped = `"${name}"`;
+
+      for (let i = 0; i < t.speeds.length; i++) {
+        const speed = String(t.speeds[i]).replace('.', ',');
+        const power = t.powers[i] != null ? String(t.powers[i]).replace('.', ',') : "";
+
+        csv += `${nameEscaped};${speed};${power}\n`;
       }
     }
 
-    return { status: 'success', data: measurements, lokacija_id, provider: usedProvider, height: usedHeight };
+    // Shrani CSV
+    fs.writeFileSync(filePath, csv, "utf8");
+
+    console.log("CSV uspešno izvožen:", filePath);
+    return { status: "success", filePath };
+
   } catch (err) {
+    console.error("Napaka pri izvozu turbin CSV:", err);
+    return { status: "error", message: err.message };
+  }
+});
+
+
+
+
+
+ipcMain.handle('weather-fetch', async (event, { 
+  latitude, 
+  longitude, 
+  provider, 
+  saveJsonPath, 
+  saveCsvPath } = {}) => {
+  try {
+    // Če je podan ponudnik, ka uporabimo. findOrFetchWeatherData default open-meteo.
+  // if caller requested saving raw provider data, force a fresh fetch so we have the original raw response
+  const forceFetch = Boolean(saveJsonPath || saveCsvPath);
+  const { measurements, lokacija_id, provider: usedProvider, height: usedHeight, raw } = 
+  await findOrFetchWeatherData(latitude, longitude, provider, undefined, forceFetch);
+
+    // JSON export
+    if (saveJsonPath && raw) {
+      try {
+        const dir = path.dirname(saveJsonPath);
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(saveJsonPath, JSON.stringify(raw, null, 2), 'utf8');
+      } catch (e) {
+        console.warn("Failed to save JSON:", e.message);
+      }
+    }
+
+    // CSV EXPORT
+if (saveCsvPath && raw) {
+  try {
+    const dir = path.dirname(saveCsvPath);
+    fs.mkdirSync(dir, { recursive: true });
+
+    const rows = convertRawToCsvRows(raw);
+
+    if (!rows || rows.length === 0) {
+      throw new Error("Ni vrstic za CSV.");
+    }
+
+    const SEP = ";";
+
+    const headers = Object.keys(rows[0]).join(SEP);
+
+    const csvRows = rows.map(r =>
+      Object.values(r)
+        .map(v => {
+          if (typeof v === "number") {
+            return v.toString().replace(".", ",");
+          }
+          return v ?? "";
+        })
+        .join(SEP)
+    );
+
+    const csvContent = headers + "\n" + csvRows.join("\n");
+
+    fs.writeFileSync(saveCsvPath, csvContent, "utf8");
+
+  } catch (e) {
+    console.warn("Failed to save CSV:", e.message);
+  }
+}
+
+
+
+    return { status: 'success',
+            data: measurements, 
+            lokacija_id, 
+            provider: usedProvider, 
+            height: usedHeight 
+          };
+
+      } catch (err) {
     console.error('Napaka v weather-fetch:', err);
     return { status: 'error', message: err.message };
   }
 });
 
-// 🔹 Branje podatkov iz CSV namesto API
+//Branje podatkov iz CSV namesto API
 ipcMain.handle("weather-fetch-csv", async (event, { latitude, longitude }) => {
   try {
     const rows = await new Promise((resolve, reject) => {
@@ -151,7 +236,6 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
 
       dataToUse = windData.map(d => {
     const corrected = { ...d };
-        // poišči vse lastnosti, ki imajo v imenu "wind_speed" ali "WS"
     for (const key of Object.keys(corrected)) {
       if (
         key.toLowerCase().includes("wind_speed") ||
@@ -254,7 +338,7 @@ ipcMain.handle('get-calculation-history', async () => {
 ipcMain.handle("import-csv", async (event, csvData) => {
   try {
 
-    const batch_id = randomUUID(); //generiraj id serije
+    const batch_id = randomUUID(); //za generiranje id serije
 
     const insert = db.prepare(`
       INSERT INTO Veter_CSV (datum, wind_speed, height, latitude, longitude, batch_id)
@@ -278,3 +362,89 @@ ipcMain.handle("import-csv", async (event, csvData) => {
     return { status: "error", message: error.message };
   }
 });
+
+function convertRawToCsvRows(raw) {
+  console.log("NASA RAW KEYS:", Object.keys(raw.properties?.parameter?.WS50M || {}));
+
+  if (!raw) return [];
+
+  //Open-Meteo
+  if (raw.hourly && typeof raw.hourly === "object") {
+    const hourly = raw.hourly;
+    const keys = Object.keys(hourly);
+    const len = Math.max(...keys.map(k => hourly[k].length || 0));
+
+    const rows = [];
+    for (let i = 0; i < len; i++) {
+      const row = {};
+      for (const key of keys) {
+        row[key] = hourly[key][i] ?? null;
+      }
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  
+      // NASA Power
+  if (raw.properties?.parameter?.WS50M) {
+  const wsObj = raw.properties.parameter.WS50M;
+
+  console.log("NASA RAW KEYS:", Object.keys(wsObj));
+
+  const rows = Object.keys(wsObj)
+    .sort()
+    .map(key => {
+      const val = wsObj[key];
+
+      if (/^\d{10}$/.test(key)) {
+        const year = key.slice(0, 4);
+        const month = key.slice(4, 6);
+        const day = key.slice(6, 8);
+        const hour = key.slice(8, 10);
+
+        const date = `${year}-${month}-${day}`;
+        const time = `${hour}:00`;
+
+        return {
+          date,
+          time,
+          wind_speed_50m: val
+        };
+      }
+
+      if (/^\d{4}$/.test(key)) {
+        const hour = key.slice(0, 2);
+        const minute = key.slice(2, 4);
+
+        return {
+          date: "",
+          time: `${hour}:${minute}`,
+          wind_speed_50m: val
+        };
+      }
+
+      if (/^\d{2}$/.test(key)) {
+        return {
+          date: "",
+          time: `${key}:00`,
+          wind_speed_50m: val
+        };
+      }
+      // fallback
+      return {
+        date: "",
+        time: key,
+        wind_speed_50m: val
+      };
+    });
+
+  return rows;
+}
+  //fallback - vrni prazen niz
+  if (Array.isArray(raw)) {
+    return raw;
+  }
+
+  return [];
+}
