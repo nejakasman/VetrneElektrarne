@@ -59,6 +59,46 @@ ipcMain.handle('weather-fetch', async (event, { latitude, longitude, provider, s
   }
 });
 
+// 🔹 Branje podatkov iz CSV namesto API
+ipcMain.handle("weather-fetch-csv", async (event, { latitude, longitude }) => {
+  try {
+    const rows = await new Promise((resolve, reject) => {
+      db.all(
+        `SELECT datum, wind_speed, height, latitude, longitude
+         FROM Veter_CSV
+         WHERE latitude = ? AND longitude = ?
+           AND batch_id = (SELECT batch_id FROM Veter_CSV ORDER BY id DESC LIMIT 1)
+         ORDER BY datum ASC`,
+        [latitude, longitude],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
+
+    if (rows.length === 0) {
+      return { status: "error", message: "Ni CSV podatkov za to lokacijo." };
+    }
+
+    return {
+      status: "success",
+      data: rows.map(r => ({
+        time: r.datum,
+        wind_speed: r.wind_speed,
+        height: r.height,
+        latitude: r.latitude,
+        longitude: r.longitude
+      })),
+      provider: "CSV datoteka 📄",
+      height: rows[0].height || null
+    };
+  } catch (err) {
+    console.error("❌ Napaka pri branju CSV podatkov:", err);
+    return { status: "error", message: err.message };
+  }
+});
+
 
 ipcMain.handle('turbine-get-speeds', (event, { turbineName }) => {
   return new Promise((resolve, reject) => {
@@ -76,7 +116,7 @@ ipcMain.handle('turbine-get-speeds', (event, { turbineName }) => {
   });
 });
 
-ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName, useCSV }) => {
+ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName, useCSV, correctionFactor = 1.0 }) => {
   try {
     const turbineData = await getTurbineSpeeds(turbineName);
     if (!turbineData || turbineData.speeds.length === 0)
@@ -99,16 +139,30 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
 
       console.log(`Uporabljam ${csvRows.length} vrstic iz CSV datoteke.`);
       dataToUse = csvRows.map(r => ({
-        wind_speed_100m: r.wind_speed,
+        wind_speed: r.wind_speed,
         datum: r.datum
       }));
 
       source = "csv";
     } else {
-      console.log(`Uporabljam podatke iz API.`);
-      dataToUse = windData;
+      console.log(`🌐 Uporabljam podatke iz API.`);
+
+      dataToUse = windData.map(d => {
+    const corrected = { ...d };
+        // poišči vse lastnosti, ki imajo v imenu "wind_speed" ali "WS"
+    for (const key of Object.keys(corrected)) {
+      if (
+        key.toLowerCase().includes("wind_speed") ||
+        key.toLowerCase().includes("ws")
+      ) {
+        const val = parseFloat(corrected[key]);
+        if (!isNaN(val)) corrected[key] = val * correctionFactor;
+      }
     }
 
+    return corrected;
+      });
+    }
     const { totalEnergy, weeklyEnergy, monthlyEnergy } =
       calculateAnnualEnergy(dataToUse, turbineData);
 

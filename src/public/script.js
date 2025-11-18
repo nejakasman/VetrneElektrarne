@@ -336,9 +336,16 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
   }
 
   showLoading();
-  // preberemo izbranega ponudnika in ga posredujemo backendu
-  const provider = (document.getElementById('provider-select') && document.getElementById('provider-select').value) || undefined;
-  const windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon, provider, saveRawPath });
+    let windResult;
+
+    if (useCSVData) {
+      //naj backend vzame zadnji batch, če csv
+      windResult = await ipcRenderer.invoke("weather-fetch-csv", { latitude: lat, longitude: lon });
+    } else {
+    const provider = (document.getElementById('provider-select') && document.getElementById('provider-select').value) || undefined;
+      windResult = await ipcRenderer.invoke("weather-fetch", { latitude: lat, longitude: lon, provider, saveRawPath });
+    }
+
 
     if (windResult.status === "success" && windResult.data.length > 0) {
       windDataCache = windResult.data;
@@ -353,10 +360,14 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
         showAlert("Izbrana turbina ni na voljo.");
         return;
       }
+
+      const correctionFactor = parseFloat(document.getElementById("wind-correction-factor").value) || 1.0;
+
       const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
         windData: windResult.data,
         turbineName: selectedTurbineName,
-        useCSV: useCSVData // pošiljam stanje
+        useCSV: useCSVData, // pošiljam stanje
+        correctionFactor
       });
 
       hideLoading();
@@ -377,8 +388,14 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
   // prikaži uporabljenega ponudnika
   const providerLabel = windResult.provider || provider;
   const providerElem = document.getElementById('result-provider');
-  const displayHeight = (typeof windResult.height !== 'undefined' && windResult.height !== null) ? windResult.height : null;
-  if (providerElem) providerElem.textContent = providerLabel + (displayHeight ? ` (${displayHeight} m)` : '');
+  const displayHeight = typeof windResult.height !== 'undefined' && windResult.height !== null ? windResult.height : null;
+  if (providerElem){
+    if(providerLabel.toLowerCase().includes('csv')){
+      providerElem.textContent = providerLabel;
+  }else{
+    providerElem.textContent = providerLabel + (displayHeight ? ` (${displayHeight} m)` : '');
+  }
+}
       const compareNameElem = document.getElementById("result-compare-turbine-name");
       const compareEnergyElem = document.getElementById("result-compare-annual-energy");
       if (compareNameElem && compareEnergyElem) {
@@ -445,10 +462,9 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
   try {
     const energyResult = await ipcRenderer.invoke("calculate-annual-energy", {
-      windData: windDataCache,
-     // windData: useCSVData ? csvData : windResult.data, //samo sveži podatki (trenutno ne deluje)
+      windData: useCSVData ? csvData : windDataCache, 
       turbineName: compareTurbineName,
-     // useCSV: useCSVData
+      useCSV: useCSVData
     });
 
     if (energyResult.status === "success") {
@@ -754,7 +770,8 @@ if (csvInput) {
 
     document.getElementById('latitude').disabled = true;
     document.getElementById('longitude').disabled = true;
-
+    document.getElementById("wind-correction-factor").disabled = true;
+    document.getElementById("provider-select").disabled = true;
     //Prikaz zastavice na zemljevidu za prvo koordinato CSV
       if (currentMarker) map.removeLayer(currentMarker);
       const firstLat = csvData[0].latitude;
@@ -792,6 +809,8 @@ if (csvInput) {
     removeCsvBtn.style.display = "none"; 
     document.getElementById('latitude').disabled = false;
     document.getElementById('longitude').disabled = false;
+    document.getElementById("wind-correction-factor").disabled = false;
+    document.getElementById("provider-select").disabled = false;
 
     //indikator nazaj na API
     const sourceIndicator = document.getElementById("data-source-indicator");
