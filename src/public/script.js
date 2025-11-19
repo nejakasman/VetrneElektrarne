@@ -147,6 +147,11 @@ csvBtn.addEventListener("click", () => {
   }
 
   naloziDropdown();
+
+ 
+  let currentProvider = undefined;
+  let currentHeight = null;
+
   // inicializacija ponudnika izbira iz localStorage 
   try {
     const saved = localStorage.getItem('weather_provider');
@@ -360,6 +365,9 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
 
     if (windResult.status === "success" && windResult.data.length > 0) {
       windDataCache = windResult.data;
+      // shranjevanje podatkov o ponudniku, višini,  turbinah za nadaljno uporabo
+      currentProvider = windResult.provider || provider;
+      currentHeight = typeof windResult.height !== 'undefined' ? windResult.height : null;
       const turbines = await ipcRenderer.invoke('turbine-read-all');
       const selectedTurbine = turbines.find(t => t.name === selectedTurbineName);
 
@@ -682,6 +690,8 @@ document.getElementById('generate-pdf-btn').addEventListener('click', async () =
       location,
       turbines,
       windData: windDataCache,
+      provider: currentProvider,
+      height_m: currentHeight,
       energyResults,
       filePath
     });

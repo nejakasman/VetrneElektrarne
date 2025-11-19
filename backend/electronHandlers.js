@@ -224,7 +224,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
         throw new Error("CSV tabela je prazna.");
       }
 
-      console.log(`✅ Uporabljam ${csvRows.length} vrstic iz CSV datoteke.`);
+      console.log(`Uporabljam ${csvRows.length} vrstic iz CSV datoteke.`);
       dataToUse = csvRows.map(r => ({
         wind_speed: r.wind_speed,
         datum: r.datum
@@ -260,7 +260,7 @@ ipcMain.handle('calculate-annual-energy', async (event, { windData, turbineName,
       source
     };
   } catch (error) {
-    console.error("❌ Napaka pri izračunu letne energije:", error);
+    console.error("Napaka pri izračunu letne energije:", error);
     return { status: "error", message: error.message };
   }
 });
