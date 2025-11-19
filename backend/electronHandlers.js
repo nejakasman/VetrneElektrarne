@@ -171,7 +171,7 @@ ipcMain.handle("weather-fetch-csv", async (event, { latitude, longitude }) => {
     return {
       status: "success",
       data: rows.map(r => ({
-        time: r.datum,
+        datetime: r.datum,
         wind_speed: r.wind_speed,
         height: r.height,
         latitude: r.latitude,
@@ -363,6 +363,16 @@ ipcMain.handle("import-csv", async (event, csvData) => {
   }
 });
 
+  ipcMain.handle("ensure-csv-location", async (event, { latitude, longitude }) => {
+  try {
+    const id = await ensureCsvLocation(latitude, longitude);
+    return id;
+  } catch (e) {
+    console.error("Napaka pri ensure-csv-location:", e);
+    throw e;
+  }
+});
+
 function convertRawToCsvRows(raw) {
   console.log("NASA RAW KEYS:", Object.keys(raw.properties?.parameter?.WS50M || {}));
 
@@ -448,3 +458,30 @@ function convertRawToCsvRows(raw) {
 
   return [];
 }
+
+function ensureCsvLocation(lat, lon) {
+  return new Promise((resolve, reject) => {
+    // preverjanje za obstoj lokacije
+    db.get(
+      "SELECT id FROM Lokacija WHERE latitude = ? AND longitude = ?",
+      [lat, lon],
+      (err, row) => {
+        if (err) return reject(err);
+
+        if (row) {
+          return resolve(row.id); // lokacija že obstaja
+        }
+        
+        db.run(
+          "INSERT INTO Lokacija (latitude, longitude) VALUES (?, ?)",
+          [lat, lon],
+          function (err2) {
+            if (err2) return reject(err2);
+            resolve(this.lastID);
+          }
+        );
+      }
+    );
+  });
+}
+

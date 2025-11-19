@@ -79,20 +79,49 @@ function calculateMonthlyWindStats(windData) {
   const monthlyData = Array(12).fill().map(() => ({ speeds: [] }));
 
   windData.forEach(data => {
-    const date = new Date(data.datetime);
-    const month = date.getMonth();
-    monthlyData[month].speeds.push(data.wind_speed);
+    let dt = null;
+
+    if (data.datetime) {
+      dt = new Date(data.datetime);
+    } 
+    else if (data.datum) {
+      dt = new Date(data.datum);
+    }
+    else if (data.date && data.time) {
+      dt = new Date(`${data.date} ${data.time}`);
+    }
+    else if (data.time) {
+      dt = new Date(`2024-01-01 ${data.time}`);
+    }
+
+    if (!dt || isNaN(dt)) return; 
+    
+    const month = dt.getMonth();
+    if (month < 0 || month > 11) return;
+
+    const speed =
+      data.wind_speed_50m ??
+      data.wind_speed_100m ??
+      data.wind_speed_10m ??
+      data.wind_speed ??
+      null;
+
+    if (speed !== null && !isNaN(speed)) {
+      monthlyData[month].speeds.push(speed);
+    }
   });
 
-  return monthlyData.map((monthData, index) => {
-    const speeds = monthData.speeds;
-    if (speeds.length === 0) {
-      return { month: index + 1, max: 0, min: 0, avg: 0 };
+  return monthlyData.map((m, i) => {
+    if (m.speeds.length === 0) {
+      return { month: i + 1, max: 0, min: 0, avg: 0 };
     }
-    const max = Math.max(...speeds);
-    const min = Math.min(...speeds);
-    const avg = speeds.reduce((sum, val) => sum + val, 0) / speeds.length;
-    return { month: index + 1, max, min, avg };
+
+    return {
+      month: i + 1,
+      max: Math.max(...m.speeds),
+      min: Math.min(...m.speeds),
+      avg: m.speeds.reduce((a, b) => a + b) / m.speeds.length
+    };
   });
 }
 
@@ -102,7 +131,7 @@ ipcMain.handle('generate-pdf-report', async (event, { location, turbines, windDa
     const doc = new PDFDocument({ autoFirstPage: false, margin: 40 });
     const stream = fs.createWriteStream(savePath);
     doc.pipe(stream);
-
+    
     const fontPath = path.join(__dirname, '../src/assets/fonts/Roboto-Regular.ttf');
     const fontBoldPath = path.join(__dirname, '../src/assets/fonts/Roboto-Bold.ttf');
     const fallbackFont = 'Helvetica';

@@ -430,8 +430,18 @@ document.getElementById("calculate-energy").addEventListener("click", async (eve
       const energyData = chartType === 'weekly' ? energyResult.weeklyEnergy : energyResult.monthlyEnergy;
       updateChart(energyData, selectedTurbineName);
 
+      
+      let lokacijaId = windResult.lokacija_id;
+
+      if (useCSVData) {
+        lokacijaId = await ipcRenderer.invoke("ensure-csv-location", {
+        latitude: lat,
+        longitude: lon
+        });
+      }
+      
       await ipcRenderer.invoke("save-calculation-history", {
-        lokacija_id: windResult.lokacija_id,
+        lokacija_id: lokacijaId ||  windResult.lokacija_id,
         turbineName: selectedTurbineName,
         annualEnergy: energyResult.totalEnergy,
         weeklyEnergy: energyResult.weeklyEnergy,
@@ -577,8 +587,27 @@ async function loadCalculationHistory() {
        timeZone: 'Europe/Ljubljana'
      });
 
-  const provLabel = item.provider ? `${item.provider}${item.height_m ? ` (${item.height_m} m)` : ''}` : 'open-meteo';
-  option.textContent = `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)}, ${Number(item.longitude).toFixed(4)}) - ${localTimeString} [${provLabel}]`;
+  let provLabel = 'open-meteo';
+
+    if (item.provider) {
+
+    if (item.provider.toLowerCase().includes('csv')) {
+      provLabel = item.provider;
+    } else {
+    const heightText =
+      item.height_m !== null &&
+      item.height_m !== undefined &&
+      item.height_m !== "null"
+        ? ` (${item.height_m} m)`
+        : '';
+
+    provLabel = `${item.provider}${heightText}`;
+  }
+}
+
+option.textContent =
+  `${item.turbine_name} @ (${Number(item.latitude).toFixed(4)},
+   ${Number(item.longitude).toFixed(4)}) - ${localTimeString} [${provLabel}]`;
      option.dataset.data = JSON.stringify(item);
      historyList.appendChild(option);
    });
@@ -621,7 +650,24 @@ loadHistoryBtn.addEventListener("click", () => {
   document.getElementById("result-turbine-name").textContent = item.turbine_name;
   document.getElementById("result-annual-energy").textContent = (firstTurbineData.totalEnergy / 1000000).toFixed(2);
   const providerElem = document.getElementById('result-provider');
-  if (providerElem) providerElem.textContent = item.provider ? `${item.provider}${item.height_m ? ` (${item.height_m} m)` : ''}` : 'open-meteo';
+  
+  if (providerElem){
+
+    let heightText = '';
+
+    if (item.height_m !== null && 
+        item.height_m !== undefined && 
+        item.height_m !== "null") {
+      heightText = ` (${item.height_m} m)`;
+    }
+
+    if (item.provider.toLowerCase().includes("csv")) {
+    providerElem.textContent = item.provider;
+    } else {
+    providerElem.textContent =
+    item.provider + (item.height_m ? ` (${item.height_m} m)` : "");
+    }
+}
 
   // Pinpoint na zemljevidu
   if (currentMarker) {
