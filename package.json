@@ -4,7 +4,7 @@
   "description": "## Opis projekta:\nNamizna aplikacija za oceno letne proizvodnje električne energije vetrnih turbin na podlagi:\n\n- geografske lokacije stojišča,\n- tipa in karakteristik izbrane turbine,\n- podatkov o vetrovnih razmerah iz vremenskih virov.\n\nProjekt je namenjen kot pomoč pri načrtovanju mikrolokacij za vetrne elektrarne, še posebej v zgodnjih fazah analiz.\n",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make"

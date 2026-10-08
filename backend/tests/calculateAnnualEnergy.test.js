@@ -9,7 +9,7 @@ describe('calculateAnnualEnergy', () => {
   };
 
   it('izračuna skupno, tedensko in mesečno energijo pravilno glede na dane podatke o vetru', () => {
-    const windData = Array(8760).fill({ wind_speed_100m: '6' });
+    const windData = Array(8760).fill({ wind_speed: '6' });
 
     const { totalEnergy, weeklyEnergy, monthlyEnergy } = calculateAnnualEnergy(windData, turbineData);
 
@@ -28,7 +28,7 @@ describe('calculateAnnualEnergy', () => {
   });
 
   it('vrne nič, če je hitrost vetra pod minimalno ali nad maksimalno vrednostjo', () => {
-    const windData = Array(8760).fill({ wind_speed_100m: '2' });
+    const windData = Array(8760).fill({ wind_speed: '2' });
 
     const { totalEnergy } = calculateAnnualEnergy(windData, turbineData);
 
@@ -36,7 +36,7 @@ describe('calculateAnnualEnergy', () => {
   });
 
   it('pravilno interpolira moč med intervali hitrosti', () => {
-    const windData = [{ wind_speed_100m: '4' }];
+    const windData = [{ wind_speed: '4' }];
 
     const { totalEnergy } = calculateAnnualEnergy(windData, turbineData);
 
