@@ -68,4 +68,46 @@ describe('TurbineService CRUD', () => {
     const result = await deleteTurbine('T1');
     expect(result).toEqual({ status: 'success', message: 'Turbina izbrisana.' });
   });
+
+  it('createTurbine: vrne napako, če vstavljanje turbine spodleti', async () => {
+    db.run.mockImplementationOnce((query, params, cb) => {
+      cb(new Error('Ime turbine že obstaja.'));
+    });
+
+    await expect(createTurbine({ name: 'T1', speeds: [], powers: [] }))
+      .rejects.toEqual({
+        status: 'error',
+        message: 'Ime turbine že obstaja.'
+      });
+  });
+
+  it('readAllTurbines: vrne napako ob napaki baze', async () => {
+    db.all.mockImplementation((query, params, cb) => {
+      cb(new Error('Napaka pri branju baze'));
+    });
+
+    await expect(readAllTurbines()).rejects.toEqual({
+      status: 'error',
+      message: 'Napaka pri branju baze'
+    });
+  });
+
+  it('updateTurbine: zavrne posodobitev neobstoječe turbine', async () => {
+    db.get.mockImplementation((query, params, cb) => cb(null, null));
+
+    await expect(updateTurbine({ name: 'Neobstoječa', speeds: [3], powers: [10] }))
+      .rejects.toEqual({
+        status: 'error',
+        message: 'Turbina ni najdena.'
+      });
+  });
+
+  it('deleteTurbine: vrne napako, če turbina ne obstaja', async () => {
+    db.run.mockImplementation(function (query, params, cb) {
+      cb.call({ changes: 0 }, null);
+    });
+
+    await expect(deleteTurbine('Neobstoječa'))
+      .rejects.toThrow('Turbina ni najdena.');
+  });
 });

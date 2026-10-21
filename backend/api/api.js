@@ -45,7 +45,8 @@ async function fetchWeatherData(latitude, longitude, provider = 'open-meteo') {
 
   // Normalize but also return the original raw payload so callers can keep the original structure
   const normalized = normalizeNasaPower(raw);
-  return { hourly: normalized.hourly, meta: { actualHeight: 50 }, raw };
+  // NAMERNA NAPAKA 1 (test): napačna višina NASA podatkov.
+  return { hourly: normalized.hourly, meta: { actualHeight: 10 }, raw };
     } catch (error) {
       console.error('Napaka v fetchWeatherData (NASA):', error);
       throw error;
@@ -65,7 +66,8 @@ async function fetchWeatherData(latitude, longitude, provider = 'open-meteo') {
       if (suffix === '100') requested = 100;
       else if (suffix === '10') requested = 10;
     }
-    const hourlyParam = requested === 100 ? 'wind_speed_100m' : 'wind_speed_10m';
+    // NAMERNA NAPAKA 2 (test): tudi za zahtevano višino 100 m se zahteva 10 m.
+    const hourlyParam = 'wind_speed_10m';
 
     const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${end}&hourly=${hourlyParam}&wind_speed_unit=ms`;
 

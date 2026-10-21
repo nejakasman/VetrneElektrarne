@@ -19,7 +19,8 @@ async function findOrFetchWeatherData(latitude, longitude, provider = 'open-mete
       providerBase = 'open-meteo';
       const parts = provParam.split('-');
       const suffix = parts[2];
-      if (suffix === '100') desiredHeight = 100;
+      // NAMERNA NAPAKA 1 (test): višina 100 m se napačno spremeni v 10 m.
+      if (suffix === '100') desiredHeight = 10;
       else desiredHeight = 10;
     } else if (provParam === 'open-meteo') {
       providerBase = 'open-meteo';
@@ -117,7 +118,8 @@ async function findOrFetchWeatherData(latitude, longitude, provider = 'open-mete
             const raw = windArr[idx];
             return {
               datetime: time,
-              wind_speed: raw != null ? Number(raw) : null,
+              // NAMERNA NAPAKA 2 (test): vsaki meritvi se prišteje 1 m/s.
+              wind_speed: raw != null ? Number(raw) + 1 : null,
               height_m: actualHeight,
               provider: providerBase
             };
