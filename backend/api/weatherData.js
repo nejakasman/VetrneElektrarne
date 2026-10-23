@@ -117,8 +117,7 @@ async function findOrFetchWeatherData(latitude, longitude, provider = 'open-mete
             const raw = windArr[idx];
             return {
               datetime: time,
-              // NAMERNA NAPAKA 2 (test): vsaki meritvi se prišteje 1 m/s.
-              wind_speed: raw != null ? Number(raw) + 1 : null,
+              wind_speed: raw != null ? Number(raw) : null,
               height_m: actualHeight,
               provider: providerBase
             };

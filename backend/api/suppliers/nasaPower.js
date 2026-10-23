@@ -30,8 +30,7 @@ function normalizeNasaPower(raw) {
   //preverjamo, da se vnaša številska vrednost ali null
   const ws50 = keys.map(k => {
     const v = paramObj[k];
-    // NAMERNA NAPAKA 2 (test): številski nizi ostanejo nizi.
-    return v === null || v === undefined ? null : v;
+    return v === null || v === undefined ? null : Number(v);
   });
 
   // vrnemo v obliki, ki jo pričakuje aplikacija
