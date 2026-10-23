@@ -39,7 +39,7 @@ describe('internet connection status in the UI', () => {
     });
 
     // Funkcija mora uspešen odgovor prepoznati kot aktivno povezavo.
-    await expect(status.checkInternetConnection()).resolves.toBe(false); //.toBe(true);
+    await expect(status.checkInternetConnection()).resolves.toBe(true);
   });
 
   it('returns offline when the server responds unsuccessfully or the request fails', async () => {
@@ -54,7 +54,7 @@ describe('internet connection status in the UI', () => {
     });
 
     // Nobeden od teh odgovorov ne sme biti obravnavan kot povezava.
-    await expect(status.checkInternetConnection()).resolves.toBe(true); //.resolves.toBe(false);
+    await expect(status.checkInternetConnection()).resolves.toBe(false);
     await expect(status.checkInternetConnection()).resolves.toBe(false);
   });
 

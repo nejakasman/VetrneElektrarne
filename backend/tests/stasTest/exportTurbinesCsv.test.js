@@ -104,7 +104,7 @@ describe('exporting turbines as CSV', () => {
       message: 'Ni podane poti za shranjevanje.'
     });
 
-    expect(readAllTurbines).toHaveBeenCalled(); //expect(readAllTurbines).not.toHaveBeenCalled();
+    expect(readAllTurbines).not.toHaveBeenCalled();
   });
 
   it('returns an error when reading turbine data fails', async () => {
@@ -132,7 +132,7 @@ describe('exporting turbines as CSV', () => {
     // Preveri, ali se napaka pri zapisovanju pravilno vrne klicatelju.
     await expect(exportCsv(null, { filePath: '/exports/turbines.csv' })).resolves.toEqual({
       status: 'error',
-      message: 'Random error' //message: 'Disk unavailable'
+      message: 'Disk unavailable'
     });
   });
 

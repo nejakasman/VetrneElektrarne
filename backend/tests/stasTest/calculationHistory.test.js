@@ -69,7 +69,7 @@ describe('calculation history', () => {
     jest.useFakeTimers().setSystemTime(new Date('2025-04-03T12:30:00.000Z'));
 
     // Preveri, ali se izračun za obstoječo turbino uspešno shrani.
-    await expect(saveHistory(null, calculation)).resolves.toEqual({ status: 'fail' }); //await expect(saveHistory(null, calculation)).resolves.toEqual({ status: 'success' });
+    await expect(saveHistory(null, calculation)).resolves.toEqual({ status: 'success' });
 
     // Preveri vrednosti, posredovane poizvedbi za shranjevanje:
     // lokacijo, ID turbine, letno energijo, serializirane podatke,
@@ -127,7 +127,7 @@ describe('calculation history', () => {
     db.all.mockImplementation((query, params, callback) => callback(null, records));
 
     // Preveri, ali obravnavalec vrne vse zapise, ki jih je vrnila baza.
-    await expect(getHistory()).resolves.toEqual(history); // await expect(getHistory()).resolves.toEqual(records);
+    await expect(getHistory()).resolves.toEqual(records);
   });
 
   it('rejects loading history when the database fails', async () => {

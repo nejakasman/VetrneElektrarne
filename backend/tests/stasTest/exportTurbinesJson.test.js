@@ -61,7 +61,7 @@ describe('exporting turbines as JSON', () => {
 
     // Preveri, ali izvoz vrne uspešno stanje in pravilno pot do datoteke.
     await expect(exportJson(null, { filePath: '/exports/turbines.json' }))
-      .resolves.toEqual({ status: 'fail', filePath: '/exports/turbines.json' }); // .resolves.toEqual({ status: 'success', filePath: '/exports/turbines.json' });
+    .resolves.toEqual({ status: 'success', filePath: '/exports/turbines.json' });
 
     // Preveri natančno vsebino in oblikovanje izpisane datoteke.
     expect(fs.writeFileSync).toHaveBeenCalledWith(
@@ -104,7 +104,7 @@ describe('exporting turbines as JSON', () => {
     // Rezultat izvoza mora opisati napako pri pisanju.
     await expect(exportJson(null, { filePath: '/exports/turbines.json' })).resolves.toEqual({
       status: 'error',
-      message: 'Disk available' //message: 'Disk unavailable'
+      message: 'Disk unavailable'
     });
   });
 
