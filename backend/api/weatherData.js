@@ -19,8 +19,7 @@ async function findOrFetchWeatherData(latitude, longitude, provider = 'open-mete
       providerBase = 'open-meteo';
       const parts = provParam.split('-');
       const suffix = parts[2];
-      // NAMERNA NAPAKA 1 (test): višina 100 m se napačno spremeni v 10 m.
-      if (suffix === '100') desiredHeight = 10;
+      if (suffix === '100') desiredHeight = 100;
       else desiredHeight = 10;
     } else if (provParam === 'open-meteo') {
       providerBase = 'open-meteo';

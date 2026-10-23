@@ -45,8 +45,7 @@ async function fetchWeatherData(latitude, longitude, provider = 'open-meteo') {
 
   // Normalize but also return the original raw payload so callers can keep the original structure
   const normalized = normalizeNasaPower(raw);
-  // NAMERNA NAPAKA 1 (test): napačna višina NASA podatkov.
-  return { hourly: normalized.hourly, meta: { actualHeight: 10 }, raw };
+  return { hourly: normalized.hourly, meta: { actualHeight: 50 }, raw };
     } catch (error) {
       console.error('Napaka v fetchWeatherData (NASA):', error);
       throw error;

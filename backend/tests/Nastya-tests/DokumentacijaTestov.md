@@ -1,6 +1,6 @@
 Za teste je uporabljeno ogrodje Jest. Za ustvarjanje testov je bil izbran Copilot in ChatGPT
 
-## 1. normalizeNasaPower() – backend/api/suppliers/nasaPower.js
+## 1. nasaPower() – backend/api/suppliers/nasaPower.js
 Utemeljitev izbire: Funkcija pretvarja podatke ponudnika NASA POWER v obliko, ki jo uporablja aplikacija. Pomembna je, ker morajo biti meritve pravilno pretvorjene in urejene.
 
 Pričakovano delovanje: Funkcija mora podatke o vetru pretvoriti v enotno strukturo, ki vsebuje čas meritve v formatu ISO in hitrost vetra. Meritve morajo biti urejene kronološko. Številčne vrednosti mora pretvoriti v števila, manjkajoče meritve pa ustrezno obravnavati. Podpirati mora tudi alternativna imena parametrov ter prazne ali neveljavne vhodne podatke.

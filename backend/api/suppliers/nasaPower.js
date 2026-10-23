@@ -15,8 +15,7 @@ function normalizeNasaPower(raw) {
   }
 
   // ključe oblike "2024010100"
-  // NAMERNA NAPAKA 1 (test): meritve se razvrstijo v obratnem časovnem vrstnem redu.
-  const keys = Object.keys(paramObj).sort().reverse();
+  const keys = Object.keys(paramObj).sort();
 
   const time = keys.map(k => {
     // sprejme ključe dolžine 10 znakov (YYYYMMDDHH)
